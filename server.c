@@ -47,6 +47,8 @@ int main()
 	
 	fd_set full_fdset;
 	fd_set read_fdset;
+	fd_set write_fdset;
+
 	FD_ZERO(&full_fdset);
 
 	int max_fd = server_sd;
@@ -59,7 +61,7 @@ int main()
 		printf("max fd = %d \n",max_fd);
 		read_fdset = full_fdset;
 
-		if(select(max_fd+1,&read_fdset,NULL,NULL,NULL)<0)
+		if(select(max_fd+1,&read_fdset,&write_fdset,NULL,NULL)<0)
 		{
 			perror("select");
 			exit (-1);
@@ -67,7 +69,10 @@ int main()
 
 		for(int fd = 3 ; fd<=max_fd; fd++)
 		{
-			if(FD_ISSET(fd,&read_fdset))
+			int read_set = FD_ISSET(fd,&read_fdset);
+			// int write_set = FD_ISSET(fd,&write_fdset);
+
+			if(read_set)
 			{
 				if(fd==server_sd)
 				{
@@ -83,6 +88,9 @@ int main()
 					char buffer[256];
 					bzero(buffer,sizeof(buffer));
 					int bytes = recv(fd,buffer,sizeof(buffer),0);
+
+					// directly sending back a response for now
+					send(fd, buffer, sizeof(buffer), 0);
 					if(bytes==0)   //client has closed the connection
 					{
 						printf("connection closed from client side \n");
@@ -98,13 +106,6 @@ int main()
 								}
 						}
 					}
-
-					if(send(fd,buffer,strlen(buffer),0)<0)
-			        {
-			            perror("send");
-			            exit(-1);
-			        }
-
 					printf("%s \n",buffer);
 				}
 			}

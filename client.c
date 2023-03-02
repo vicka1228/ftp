@@ -7,8 +7,12 @@
 #include<unistd.h>
 #include<stdlib.h>
 
+#include "client_helper.h"
+
 int main()
 {
+	displayIntro();
+
 	//socket
 	int server_sd = socket(AF_INET,SOCK_STREAM,0);
 	if(server_sd<0)
@@ -37,9 +41,10 @@ int main()
 
 	while(1)
 	{
+	   printf("ftp> ");
        fgets(buffer,sizeof(buffer),stdin);
        buffer[strcspn(buffer, "\n")] = 0;  //remove trailing newline char from buffer, fgets does not remove it
-       if(strcmp(buffer,"bye")==0)
+       if(strcmp(buffer,"QUIT")==0)
         {
         	printf("closing the connection to server \n");
         	close(server_sd);
