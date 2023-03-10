@@ -11,7 +11,7 @@
 
 int main()
 {
-	// displayIntro();
+	displayIntro();
 
 	//socket
 	int server_sd = socket(AF_INET,SOCK_STREAM,0);
@@ -34,36 +34,40 @@ int main()
     {
         perror("connect");
         exit(-1);
-    }
+    } else {
+		printf("220 Service ready for new user.\n");
+	}
 	
 	//accept
 	char buffer[256];
-	send(server_sd,"connected",strlen("connected"),0); //sending something so that fd != server_sd in the server
-	
+	// send(server_sd,"connected",strlen("connected"),0); //sending something so that fd != server_sd in the server
 
 	while(1)
 	{
-	   int bytes = recv(server_sd,buffer,sizeof(buffer),0);
-	   printf("%s\n", buffer);
-	   bzero(buffer,sizeof(buffer));
 	   printf("ftp> ");
        fgets(buffer,sizeof(buffer),stdin);
        buffer[strcspn(buffer, "\n")] = 0;  //remove trailing newline char from buffer, fgets does not remove it
+
+	   int client_task = handle_commands(buffer);
+
        if(strcmp(buffer,"QUIT")==0)
         {
         	printf("closing the connection to server \n");
         	close(server_sd);
             break;
         }
-        if(send(server_sd,buffer,strlen(buffer),0)<0)
-        {
-            perror("send");
-            exit(-1);
-        }
 
-		bytes = recv(server_sd,buffer,sizeof(buffer),0);
-
-		printf("%s\n", buffer);
+		// if command is not executed in client, then send to server
+		if (!client_task) {
+			if(send(server_sd,buffer,strlen(buffer),0)<0)
+			{
+				perror("send");
+				exit(-1);
+			}
+			
+			int bytes = recv(server_sd,buffer,sizeof(buffer),0);
+			printf("%s\n", buffer);
+		}
 
         bzero(buffer,sizeof(buffer));			
 	}

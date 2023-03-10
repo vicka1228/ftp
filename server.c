@@ -12,9 +12,16 @@
 #include<unistd.h>
 #include<stdlib.h>
 
+#include "server_helper.h"
+
+#define MAX_USERS 100
+struct User session[MAX_USERS];
+
 int main()
 {
 	//socket
+	bzero(session, sizeof(session));
+
 	int server_sd = socket(AF_INET,SOCK_STREAM,0);
 	printf("Server fd = %d \n",server_sd);
 	if(server_sd<0)
@@ -70,7 +77,6 @@ int main()
 		for(int fd = 3 ; fd<=max_fd; fd++)
 		{
 			int read_set = FD_ISSET(fd,&read_fdset);
-			// int write_set = FD_ISSET(fd,&write_fdset);
 
 			if(read_set)
 			{
@@ -85,30 +91,16 @@ int main()
 					
 					if(client_sd>max_fd)	
 						max_fd = client_sd;
-
 					
 				}
 				else
 				{
 					
 					char* msg; //can use for all server messages
-
 					char buffer[256];
 					
 					bzero(buffer,sizeof(buffer));
 					int bytes = recv(fd,buffer,sizeof(buffer),0);
-
-					if(strcmp(buffer, "connected")==0){
-						msg = "220 Service ready for new user.";
-					}
-
-					//else if for other commands
-
-					if(send(fd, msg, strlen(msg), 0)<0)
-					{
-						perror("send");
-						exit(-1);
-					}
 
 					// directly sending back a response for now
 					// send(fd, buffer, sizeof(buffer), 0);
@@ -126,8 +118,16 @@ int main()
 									break;
 								}
 						}
+					} else {
+						//else if for other commands
+						msg = handle_commands(fd, buffer);
+
+						if(send(fd, msg, strlen(msg), 0)<0)
+						{
+							perror("send");
+							exit(-1);
+						}
 					}
-					printf("%s \n",buffer);
 				}
 			}
 		}
