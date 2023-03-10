@@ -1,15 +1,24 @@
 #include<stdio.h>
+#include<stdlib.h>
 #include "server_helper.h"
 #include<string.h>
+
+#define BUFFER_SIZE 1024
 
 char* handle_messages(int code) {
 	switch (code)
 	{
+	case 200:
+		return "200 directory changed to ";
+		break;
 	case 202:
 		return "202 Command not implemented.";
 		break;
 	case 230:
 		return "230 User logged in, proceed.";
+		break;
+	case 257:
+		return "257 ";
 		break;
 	case 331:
 		return "331 Username OK, need password.";
@@ -19,6 +28,9 @@ char* handle_messages(int code) {
 		break;
 	case 530:
 		return "530 Not Logged In";
+		break;
+	case 550:
+		return "550 No such file or directory.";
 		break;
 	default:
 		return "Unexpected Error";
@@ -63,15 +75,78 @@ char* handle_retr(int fd) {
 }
 
 char* handle_list(int fd) {
+	char command[100];
+	command[0] = '\0';
+	char buffer[BUFFER_SIZE];
+    char output[BUFFER_SIZE];
+    FILE* fp;
+
+	strcat(command, "ls ");
+
+    fp = popen(command, "r");
+    if (fp == NULL) {
+        fprintf(stderr, "Error executing command\n");
+        exit(1);
+    }
+
+    while (fgets(buffer, BUFFER_SIZE, fp) != NULL) {
+        strcat(output, buffer);
+    }
+
+    pclose(fp);
+
+	printf("Output:\n%s\n", output);
 	return "NA";
 }
 
 char* handle_cwd(int fd) {
-	return "NA";
+	char* BASE_DIR = "server_dir";
+	char* dest = strtok(NULL, "\n");
+
+	if (dest == NULL) {
+		return handle_messages(202);
+	}
+
+	char NEW_DIR[BUFFER_SIZE];
+	NEW_DIR[0] = '\0';
+
+	sprintf(NEW_DIR, "%s%s", BASE_DIR, dest);
+
+	char exec[strlen(NEW_DIR) + 4];
+	exec[0] = '\0';
+
+	sprintf(exec, "cd %s", NEW_DIR);
+
+	int return_val = system(exec);
+
+	if (return_val == 0) {
+		char TEMP[50];
+		TEMP[0] = '\0';
+		strcat(TEMP, dest);
+		strcpy(CUR_DIR, TEMP);
+		
+		char* response =  handle_messages(200);
+		char* TEMP_RES = malloc(BUFFER_SIZE);
+		bzero(TEMP_RES, sizeof(TEMP_RES));
+		strcpy(TEMP_RES, response);
+
+		strcat(TEMP_RES, CUR_DIR);
+		return TEMP_RES;	
+		
+	} else {
+		return handle_messages(550);
+	}
 }
 
 char* handle_pwd(int fd) {
-	return "NA";
+	char* response = handle_messages(257);
+
+	char* TEMP = malloc(BUFFER_SIZE);
+	bzero(TEMP, sizeof(TEMP));
+	strcpy(TEMP, response);
+
+	strcat(TEMP, CUR_DIR);
+	return TEMP;	
 }
 
 char* handle_quit(int fd) {

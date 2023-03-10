@@ -10,7 +10,6 @@ void displayIntro() {
 
 int handle_commands(char* command, char** CDIR) {
 	char* CUR_DIR = *CDIR;
-	printf("Defefe %s\n", CUR_DIR);
 
 	char client_command[strlen(command) + 1];
 	strcpy(client_command, command);
@@ -23,7 +22,6 @@ int handle_commands(char* command, char** CDIR) {
 
 	sprintf(FULL_DIR, "%s%s", BASE_DIR, CUR_DIR);
 
-	printf("Full Directory : %s", FULL_DIR);
 	
 	char* token = strtok(client_command, " ");
 
@@ -40,7 +38,6 @@ int handle_commands(char* command, char** CDIR) {
 		return 1;
 	} else if (strcmp(token, "!CWD") == 0) {
 		char* dest = strtok(NULL, "\n");
-		printf("Destination : %s\n", dest);
 		if (dest == NULL) {
 			printf("202 Command not implemented.\n");
 			return 1;

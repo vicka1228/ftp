@@ -17,8 +17,13 @@
 #define MAX_USERS 100
 struct User session[MAX_USERS];
 
+char CUR_DIR[100];
+
 int main()
 {
+	bzero(CUR_DIR, sizeof(CUR_DIR));
+	CUR_DIR[0] = '/';
+	CUR_DIR[1] = '\0';
 	//socket
 	bzero(session, sizeof(session));
 

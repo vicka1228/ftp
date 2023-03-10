@@ -68,6 +68,7 @@ int main()
 				exit(-1);
 			}
 			
+			bzero(buffer,sizeof(buffer));	
 			int bytes = recv(server_sd,buffer,sizeof(buffer),0);
 			printf("%s\n", buffer);
 		}
