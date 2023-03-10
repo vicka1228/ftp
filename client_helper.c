@@ -8,8 +8,9 @@ void displayIntro() {
 		\nPlease type the commands below...\n\n");
 }
 
-int handle_commands(char* command) {
-	// char* CUR_DIR = *CDIR;
+int handle_commands(char* command, char** CDIR) {
+	char* CUR_DIR = *CDIR;
+	printf("Defefe %s\n", CUR_DIR);
 
 	char client_command[strlen(command) + 1];
 	strcpy(client_command, command);
@@ -17,15 +18,18 @@ int handle_commands(char* command) {
 	char* BASE_DIR = "client_dir";
 	int arr_size = strlen(BASE_DIR) + strlen(CUR_DIR);
 	
-	char FULL_DIR[arr_size + 1];
+	char FULL_DIR[100 + 1];
 	FULL_DIR[0] = '\0';
 
 	sprintf(FULL_DIR, "%s%s", BASE_DIR, CUR_DIR);
+
+	printf("Full Directory : %s", FULL_DIR);
 	
 	char* token = strtok(client_command, " ");
 
 	if (strcmp(token, "!LIST") == 0) {
-		char exec[strlen("ls ") + strlen(FULL_DIR) + 1];
+		// char exec[strlen("ls ") + strlen(FULL_DIR) + 1];
+		char exec[200 + 1];
 		exec[0] = '\0';
 	
 		sprintf(exec, "ls %s", FULL_DIR);
@@ -36,17 +40,17 @@ int handle_commands(char* command) {
 		return 1;
 	} else if (strcmp(token, "!CWD") == 0) {
 		char* dest = strtok(NULL, "\n");
+		printf("Destination : %s\n", dest);
 		if (dest == NULL) {
 			printf("202 Command not implemented.\n");
-			return 0;
+			return 1;
 		}
 
-		char NEW_DIR[strlen(BASE_DIR) + strlen(dest) + 1];
+		// char NEW_DIR[strlen(BASE_DIR) + strlen(dest) + 1];
+		char NEW_DIR[200+ 1];
 		NEW_DIR[0] = '\0';
 
 		sprintf(NEW_DIR, "%s%s", BASE_DIR, dest);
-
-		// printf("New Dir: %s", NEW_DIR);
 		
 		char exec[strlen(NEW_DIR) + 4];
 		exec[0] = '\0';
@@ -55,19 +59,20 @@ int handle_commands(char* command) {
 
 		int return_val = system(exec);
 		if (return_val == 0) {
-			char TEMP[strlen(dest) + 1];
+			// char TEMP[strlen(dest) + 1];
+			char TEMP[100+ 1];
 			TEMP[0] = '\0';
 			strcat(TEMP, dest);
 
-			CUR_DIR = TEMP;
+			*CDIR = TEMP;
 
-			printf("200 directory changed to %s.\n", CUR_DIR);
+			printf("200 directory changed to %s.\n", *CDIR);
 
 		} else {
 			printf("550 No such file or directory.\n");
 		}
 		return 1;
-	}
+	} 
 
 	return 0;
 }

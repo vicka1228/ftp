@@ -1,4 +1,4 @@
-extern char* CUR_DIR;
+// extern char* CUR_DIR;
 
 void displayIntro();
-int handle_commands(char*);
+int handle_commands(char*, char**);

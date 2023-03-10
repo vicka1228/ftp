@@ -9,11 +9,12 @@
 
 #include "client_helper.h"
 
-char* CUR_DIR = "/";
+// char* CUR_DIR = "/";
 
 int main()
 {
 	displayIntro();
+	char* CUR_DIR = "/";
 
 	//socket
 	int server_sd = socket(AF_INET,SOCK_STREAM,0);
@@ -49,7 +50,7 @@ int main()
        fgets(buffer,sizeof(buffer),stdin);
        buffer[strcspn(buffer, "\n")] = 0;  //remove trailing newline char from buffer, fgets does not remove it
 
-	   int client_task = handle_commands(buffer);
+	   int client_task = handle_commands(buffer, &CUR_DIR);
 	//    printf("CUR DIRRR %s\n", CUR_DIR);
 
        if(strcmp(buffer,"QUIT")==0)
