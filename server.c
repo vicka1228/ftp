@@ -78,19 +78,40 @@ int main()
 				{
 					int client_sd = accept(server_sd,0,0);
 					printf("Client Connected fd = %d \n",client_sd);
+					
+					// printf("here\n");
+					
 					FD_SET(client_sd,&full_fdset);
 					
 					if(client_sd>max_fd)	
 						max_fd = client_sd;
+
+					
 				}
 				else
 				{
+					
+					char* msg; //can use for all server messages
+
 					char buffer[256];
+					
 					bzero(buffer,sizeof(buffer));
 					int bytes = recv(fd,buffer,sizeof(buffer),0);
 
+					if(strcmp(buffer, "connected")==0){
+						msg = "220 Service ready for new user.";
+					}
+
+					//else if for other commands
+
+					if(send(fd, msg, strlen(msg), 0)<0)
+					{
+						perror("send");
+						exit(-1);
+					}
+
 					// directly sending back a response for now
-					send(fd, buffer, sizeof(buffer), 0);
+					// send(fd, buffer, sizeof(buffer), 0);
 					if(bytes==0)   //client has closed the connection
 					{
 						printf("connection closed from client side \n");

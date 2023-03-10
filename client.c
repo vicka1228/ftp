@@ -11,7 +11,7 @@
 
 int main()
 {
-	displayIntro();
+	// displayIntro();
 
 	//socket
 	int server_sd = socket(AF_INET,SOCK_STREAM,0);
@@ -38,9 +38,14 @@ int main()
 	
 	//accept
 	char buffer[256];
+	send(server_sd,"connected",strlen("connected"),0); //sending something so that fd != server_sd in the server
+	
 
 	while(1)
 	{
+	   int bytes = recv(server_sd,buffer,sizeof(buffer),0);
+	   printf("%s\n", buffer);
+	   bzero(buffer,sizeof(buffer));
 	   printf("ftp> ");
        fgets(buffer,sizeof(buffer),stdin);
        buffer[strcspn(buffer, "\n")] = 0;  //remove trailing newline char from buffer, fgets does not remove it
@@ -56,7 +61,7 @@ int main()
             exit(-1);
         }
 
-		int bytes = recv(server_sd,buffer,sizeof(buffer),0);
+		bytes = recv(server_sd,buffer,sizeof(buffer),0);
 
 		printf("%s\n", buffer);
 
