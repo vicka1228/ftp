@@ -9,6 +9,8 @@
 
 #include "client_helper.h"
 
+char* CUR_DIR = "/";
+
 int main()
 {
 	displayIntro();
@@ -40,7 +42,6 @@ int main()
 	
 	//accept
 	char buffer[256];
-	// send(server_sd,"connected",strlen("connected"),0); //sending something so that fd != server_sd in the server
 
 	while(1)
 	{
@@ -49,6 +50,7 @@ int main()
        buffer[strcspn(buffer, "\n")] = 0;  //remove trailing newline char from buffer, fgets does not remove it
 
 	   int client_task = handle_commands(buffer);
+	//    printf("CUR DIRRR %s\n", CUR_DIR);
 
        if(strcmp(buffer,"QUIT")==0)
         {
