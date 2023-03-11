@@ -15,7 +15,8 @@ int PORT_OFFSET = 1;
 int main()
 {
 	displayIntro();
-	char* CUR_DIR = "/";
+	// potentially change to fixed size
+	char* CUR_DIR = "/";		// using CUR_DIR here because globals need to have a fixed size
 
 	//socket
 	int server_sd = socket(AF_INET,SOCK_STREAM,0);
@@ -51,8 +52,11 @@ int main()
        fgets(buffer,sizeof(buffer),stdin);
        buffer[strcspn(buffer, "\n")] = 0;  //remove trailing newline char from buffer, fgets does not remove it
 
+		// client_task signifier that a command is handled on client_side vs server_side
+		// if 0 it's server_side, if 1 it's client_side
 	   int client_task = handle_commands(server_sd, buffer, &CUR_DIR);
 
+		// handle this in SERVER
        if(strcmp(buffer,"QUIT")==0)
         {
         	printf("closing the connection to server \n");
@@ -60,7 +64,7 @@ int main()
             break;
         }
 
-		// if command is not executed in client, then send to server
+		// if command is not executed in client because client_task == 1, then send to server
 		if (!client_task) {
 			if(send(server_sd,buffer,strlen(buffer),0)<0)
 			{

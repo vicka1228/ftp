@@ -15,13 +15,15 @@
 #include "server_helper.h"
 
 #define MAX_USERS 100
-struct User session[MAX_USERS];
 
+// defining the global extern variables
+struct User session[MAX_USERS];
 char CUR_DIR[100];
 
 int main()
 {
 	bzero(CUR_DIR, sizeof(CUR_DIR));
+	// storing / as the cur directory in CUR_DIR global variable
 	CUR_DIR[0] = '/';
 	CUR_DIR[1] = '\0';
 	//socket
@@ -100,15 +102,12 @@ int main()
 				}
 				else
 				{
-					
-					char* msg; //can use for all server messages
-					char buffer[256];
+					char buffer[256];		// variable to store incoming message
 					
 					bzero(buffer,sizeof(buffer));
 					int bytes = recv(fd,buffer,sizeof(buffer),0);
 
-					// directly sending back a response for now
-					// send(fd, buffer, sizeof(buffer), 0);
+					// also have to abort data connection here as well
 					if(bytes==0)   //client has closed the connection
 					{
 						printf("connection closed from client side \n");
@@ -124,11 +123,9 @@ int main()
 								}
 						}
 					} else {
-						//else if for other commands
-						char* msg = malloc(1024);
+						char* msg = malloc(1024);		// char array to store server responses
 						bzero(msg, sizeof(msg));
-						handle_commands(fd, buffer, msg);
-						printf("MESSAGE : %s\n", msg);
+						handle_commands(fd, buffer, msg);		// handle server commands
 
 						if(send(fd, msg, strlen(msg), 0)<0)
 						{

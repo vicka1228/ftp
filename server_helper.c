@@ -48,7 +48,6 @@ char* handle_messages(int code) {
 
 char* handle_user(int fd) {
 	char* username = strtok(NULL, " ");
-	printf("Handle User %s\n", username);
 	char* response = handle_messages(530);
 
 	if (username != NULL) {
@@ -69,6 +68,7 @@ char* handle_pass(int fd) {
 	if (check_user_pass(session[fd].uname, password) == 1) {
 		response = handle_messages(230);
 		session[fd].state = 2;			// state == 2 means user is now authenticated
+		// potentially make directory for the client here
 	}
 
 	return response;
@@ -78,7 +78,7 @@ char* handle_port(int fd) {
 	char* host_id = strtok(NULL, " ");
 	char* response = handle_messages(201);
 
-	// TAKEOVER: MAKE SERVER
+	// STORE THE PORT FOR THE CLIENT
 	
 	return response;
 }
@@ -92,32 +92,32 @@ char* handle_retr(int fd) {
 }
 
 char* handle_list(int fd) {
-	char command[100];
-	command[0] = '\0';
-	char buffer[BUFFER_SIZE];
-    char output[BUFFER_SIZE];
-    FILE* fp;
+	// char command[100];
+	// command[0] = '\0';
+	// char buffer[BUFFER_SIZE];
+    // char output[BUFFER_SIZE];
+    // FILE* fp;
 
-	strcat(command, "ls ");
+	// strcat(command, "ls ");
 
-    fp = popen(command, "r");
-    if (fp == NULL) {
-        fprintf(stderr, "Error executing command\n");
-        exit(1);
-    }
+    // fp = popen(command, "r");
+    // if (fp == NULL) {
+    //     fprintf(stderr, "Error executing command\n");
+    //     exit(1);
+    // }
 
-    while (fgets(buffer, BUFFER_SIZE, fp) != NULL) {
-        strcat(output, buffer);
-    }
+    // while (fgets(buffer, BUFFER_SIZE, fp) != NULL) {
+    //     strcat(output, buffer);
+    // }
 
-    pclose(fp);
+    // pclose(fp);
 
-	printf("Output:\n%s\n", output);
+	// printf("Output:\n%s\n", output);
 	return "NA";
 }
 
 char* handle_cwd(int fd) {
-	char* BASE_DIR = "server_dir";
+	char* BASE_DIR = "server_dir/";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
 	char* dest = strtok(NULL, "\n");
 
 	if (dest == NULL) {
@@ -171,9 +171,9 @@ char* handle_quit(int fd) {
 }
 
 void handle_commands(int fd, char* command, char* message) {
-	char* token = strtok(command, " ");
-	char* response;
-	int authenticated = session[fd].state;
+	char* token = strtok(command, " ");			// get the string before space, the command
+	char* response;			// a temporary char array to store the response
+	int authenticated = session[fd].state;			// value to denote authentication for session
 
 	if(strcmp(token, "USER") == 0) {
 		// state == 2 means the user is fully authenticated.
@@ -207,7 +207,7 @@ void handle_commands(int fd, char* command, char* message) {
 // Send NULL for USER command to only check for user
 int check_user_pass(char* username, char* password) {
 	FILE* user_file = fopen("users.txt", "r");
-	char user_pass[100];
+	char user_pass[100];			// array to store the lines from the file
 
 	if (user_file == NULL)
 	{
