@@ -77,8 +77,9 @@ char* handle_pass(int fd) {
 char* handle_port(int fd) {
 	char* host_id = strtok(NULL, " ");
 	char* response = handle_messages(201);
-
+	printf("%s", host_id);
 	// STORE THE PORT FOR THE CLIENT
+	// session[fd].port = 
 	
 	return response;
 }
