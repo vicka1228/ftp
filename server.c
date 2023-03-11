@@ -125,13 +125,18 @@ int main()
 						}
 					} else {
 						//else if for other commands
-						msg = handle_commands(fd, buffer);
+						char* msg = malloc(1024);
+						bzero(msg, sizeof(msg));
+						handle_commands(fd, buffer, msg);
+						printf("MESSAGE : %s\n", msg);
 
 						if(send(fd, msg, strlen(msg), 0)<0)
 						{
 							perror("send");
 							exit(-1);
 						}
+
+						free(msg);
 					}
 				}
 			}

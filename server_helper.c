@@ -6,36 +6,44 @@
 #define BUFFER_SIZE 1024
 
 char* handle_messages(int code) {
+	char* code_message = malloc(BUFFER_SIZE);
+	bzero(code_message, sizeof(code_message));
+
 	switch (code)
 	{
 	case 200:
-		return "200 directory changed to ";
+		strcpy(code_message,"200 directory changed to ");
+		break;
+	case 201:			// although message is 200, changing it to 201 to avoid conflict
+		strcpy(code_message,"200 PORT command successful.");
 		break;
 	case 202:
-		return "202 Command not implemented.";
+		strcpy(code_message,"202 Command not implemented.");
 		break;
 	case 230:
-		return "230 User logged in, proceed.";
+		strcpy(code_message,"230 User logged in, proceed.");
 		break;
 	case 257:
-		return "257 ";
+		strcpy(code_message,"257 ");
 		break;
 	case 331:
-		return "331 Username OK, need password.";
+		strcpy(code_message,"331 Username OK, need password.");
 		break;
 	case 503:
-		return "503 Bad sequence of commands.";
+		strcpy(code_message,"503 Bad sequence of commands.");
 		break;
 	case 530:
-		return "530 Not Logged In";
+		strcpy(code_message,"530 Not Logged In");
 		break;
 	case 550:
-		return "550 No such file or directory.";
+		strcpy(code_message,"550 No such file or directory.");
 		break;
 	default:
-		return "Unexpected Error";
+		strcpy(code_message,"Unexpected Error");
 		break;
 	}
+
+	return code_message;
 }
 
 char* handle_user(int fd) {
@@ -63,6 +71,15 @@ char* handle_pass(int fd) {
 		session[fd].state = 2;			// state == 2 means user is now authenticated
 	}
 
+	return response;
+}
+
+char* handle_port(int fd) {
+	char* host_id = strtok(NULL, " ");
+	char* response = handle_messages(201);
+
+	// TAKEOVER: MAKE SERVER
+	
 	return response;
 }
 
@@ -153,7 +170,7 @@ char* handle_quit(int fd) {
 	return "NA";
 }
 
-char* handle_commands(int fd, char* command) {
+void handle_commands(int fd, char* command, char* message) {
 	char* token = strtok(command, " ");
 	char* response;
 	int authenticated = session[fd].state;
@@ -161,10 +178,11 @@ char* handle_commands(int fd, char* command) {
 	if(strcmp(token, "USER") == 0) {
 		// state == 2 means the user is fully authenticated.
 		response = authenticated != 2 ? handle_user(fd) : handle_messages(503);
-
 	} else if (strcmp(token, "PASS") == 0) {
 		// state == 1 means the user has entered valid username, but password hasn't been entered yet.	
 		response = authenticated == 1 ? handle_pass(fd) : handle_messages(503);
+	} else if (strcmp(token, "PORT") == 0) {
+		response = authenticated == 2 ? handle_port(fd) : handle_messages(503);
 	} else if (strcmp(token, "STOR") == 0) {
 		response = authenticated == 2 ? handle_stor(fd) : handle_messages(503);
 	} else if (strcmp(token, "RETR") == 0) {
@@ -181,7 +199,8 @@ char* handle_commands(int fd, char* command) {
 		response = handle_messages(202);
 	}
 
-	return response;
+	strcpy(message, response);
+	free(response);
 }
 
 // Send password for PASS command to check for username and password
