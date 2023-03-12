@@ -1,7 +1,7 @@
 struct User {
     int state;      // state can be 0, 1, 2: 0-> no session, 1-> user added waiting pass, 2-> authenticated
     char uname[50];         // after adding username, store here
-    char* host;
+    char host[50];
     int port;
 };
 extern struct User session[100];        // global array to store all sessions

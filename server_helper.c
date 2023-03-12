@@ -7,7 +7,8 @@
 
 char* handle_messages(int code) {
 	char* code_message = malloc(BUFFER_SIZE);
-	bzero(code_message, sizeof(code_message));
+	// bzero(code_message, sizeof(code_message));
+	bzero(code_message, BUFFER_SIZE);
 
 	switch (code)
 	{
@@ -76,11 +77,43 @@ char* handle_pass(int fd) {
 
 char* handle_port(int fd) {
 	char* host_id = strtok(NULL, " ");
-	char* response = handle_messages(201);
-	printf("%s", host_id);
-	// STORE THE PORT FOR THE CLIENT
-	// session[fd].port = 
+
+	// char* temp[6];
+	// temp[0] = strtok(host_id, ","); 
 	
+	// for(int i=1; i<6; i++){
+	// 	strcpy(temp[i], strtok(NULL, ","));
+	// 	printf("%s\n", temp[i]);
+	// }
+	
+	printf("%s\n", host_id);
+
+	char* h1 = strtok(host_id, ",");
+	printf("%s\n", h1);
+	char* h2 = strtok(NULL, ",");
+	printf("%s\n", h2);
+	char* h3 = strtok(NULL, ",");
+	printf("%s\n", h3);
+	char* h4 = strtok(NULL, ",");
+	printf("%s\n", h4);
+	char* p1 = strtok(NULL, ",");
+	printf("%s\n", p1);
+	char* p2 = strtok(NULL, ",");
+	printf("%s\n", p2);
+
+	// STORE THE PORT FOR THE CLIENT
+	session[fd].port = (atoi(p1)*256)+atoi(p2);
+	printf("%d\n", session[fd].port);
+
+	char host[50];
+	sprintf(host, "%s.%s.%s.%s", h1, h2, h3, h4);
+	printf("%s\n", host);
+	// store host for client
+	strcpy(session[fd].host, host);
+	// *session[fd].host = *host;
+	printf("%s\n", session[fd].host);
+	
+	char* response = handle_messages(201);
 	return response;
 }
 
@@ -145,7 +178,8 @@ char* handle_cwd(int fd) {
 		
 		char* response =  handle_messages(200);
 		char* TEMP_RES = malloc(BUFFER_SIZE);
-		bzero(TEMP_RES, sizeof(TEMP_RES));
+		// bzero(TEMP_RES, sizeof(TEMP_RES));
+		bzero(TEMP_RES, BUFFER_SIZE);
 		strcpy(TEMP_RES, response);
 
 		strcat(TEMP_RES, CUR_DIR);
@@ -160,7 +194,8 @@ char* handle_pwd(int fd) {
 	char* response = handle_messages(257);
 
 	char* TEMP = malloc(BUFFER_SIZE);
-	bzero(TEMP, sizeof(TEMP));
+	// bzero(TEMP, sizeof(TEMP));
+	bzero(TEMP, BUFFER_SIZE);
 	strcpy(TEMP, response);
 
 	strcat(TEMP, CUR_DIR);

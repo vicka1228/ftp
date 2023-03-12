@@ -124,7 +124,8 @@ int main()
 						}
 					} else {
 						char* msg = malloc(1024);		// char array to store server responses
-						bzero(msg, sizeof(msg));
+						// bzero(msg, sizeof(msg));
+						bzero(msg, 1024);
 						handle_commands(fd, buffer, msg);		// handle server commands
 
 						if(send(fd, msg, strlen(msg), 0)<0)
