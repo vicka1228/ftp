@@ -77,14 +77,6 @@ char* handle_pass(int fd) {
 
 char* handle_port(int fd) {
 	char* host_id = strtok(NULL, " ");
-
-	// char* temp[6];
-	// temp[0] = strtok(host_id, ","); 
-	
-	// for(int i=1; i<6; i++){
-	// 	strcpy(temp[i], strtok(NULL, ","));
-	// 	printf("%s\n", temp[i]);
-	// }
 	
 	printf("%s\n", host_id);
 
