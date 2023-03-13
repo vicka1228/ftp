@@ -101,7 +101,7 @@ int handle_commands(int fd, char* command, char** CDIR) {
 			printf("550 No such file or directory.\n");
 		}
 		return 1;
-	} else if (strcmp(token, "RETR") == 0) {
+	} else if (strcmp(token, "RETR") == 0 || strcmp(token, "STOR")==0 || strcmp(token, "LIST")==0) {
 		char PORT_VAL[50];
 		bzero(PORT_VAL, sizeof(PORT_VAL));
 
@@ -117,9 +117,9 @@ int handle_commands(int fd, char* command, char** CDIR) {
 		char buffer[256];
 		bzero(buffer,sizeof(buffer));	
 		int bytes = recv(fd,buffer,sizeof(buffer),0);
-		// potentially increase PORT_OFFSET
+		PORT_OFFSET+=1;
 		printf("%s\n", buffer);
-		return 1;
+		return 0; //because it needs to be handled on server after this
 	}
 
 	return 0;
