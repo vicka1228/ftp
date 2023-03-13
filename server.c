@@ -106,12 +106,33 @@ int main()
 					
 					bzero(buffer,sizeof(buffer));
 					int bytes = recv(fd,buffer,sizeof(buffer),0);
-
-					// also have to abort data connection here as well
-					if(bytes==0)   //client has closed the connection
+					if(bytes==0) // to handle Ctrl+C from client side
 					{
-						printf("connection closed from client side \n");
 						close(fd);
+						printf("connection closed from client\n");
+						FD_CLR(fd,&full_fdset);
+						if(fd==max_fd)
+						{
+							for(int i=max_fd; i>=3; i--)
+								if(FD_ISSET(i,&full_fdset))
+								{
+									max_fd =  i;
+									break;
+								}
+						}
+					}
+					// also have to abort data connection here as well potentially
+					if(strcmp(buffer, "QUIT")==0)   //client wants to close the connection
+					{
+						char* msg = "221 Service closing control connection.";
+						if(send(fd, msg, strlen(msg), 0)<0)
+						{
+							perror("send");
+							exit(-1);
+						}
+	
+						close(fd);
+						printf("connection closed from client\n");
 						FD_CLR(fd,&full_fdset);
 						if(fd==max_fd)
 						{

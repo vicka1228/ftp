@@ -59,9 +59,19 @@ int main()
 		// handle this in SERVER
        if(strcmp(buffer,"QUIT")==0)
         {
-        	printf("closing the connection to server \n");
-        	close(server_sd);
-            break;
+			if(send(server_sd,buffer,strlen(buffer),0)<0)
+			{
+				perror("send");
+				exit(-1);
+			}
+			int bytes = recv(server_sd,buffer,sizeof(buffer),0);
+			printf("%s\n", buffer);
+        	// printf("closing the connection to server \n");
+			if(strcmp(buffer, "221 Service closing control connection.")==0)
+			{
+				close(server_sd);
+            	break;
+			}
         }
 
 		// if command is not executed in client because client_task == 1, then send to server

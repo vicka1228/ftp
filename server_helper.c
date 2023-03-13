@@ -114,6 +114,7 @@ char* handle_stor(int fd) {
 }
 
 char* handle_retr(int fd) {
+	printf("NA\n");
 	return "NA";
 }
 
@@ -143,7 +144,7 @@ char* handle_list(int fd) {
 }
 
 char* handle_cwd(int fd) {
-	char* BASE_DIR = "server_dir/";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
+	char* BASE_DIR = "server_dir";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
 	char* dest = strtok(NULL, "\n");
 
 	if (dest == NULL) {
@@ -153,7 +154,7 @@ char* handle_cwd(int fd) {
 	char NEW_DIR[BUFFER_SIZE];
 	NEW_DIR[0] = '\0';
 
-	sprintf(NEW_DIR, "%s%s", BASE_DIR, dest);
+	sprintf(NEW_DIR, "%s%s/%s", BASE_DIR, CUR_DIR, dest);
 
 	char exec[strlen(NEW_DIR) + 4];
 	exec[0] = '\0';
@@ -164,10 +165,12 @@ char* handle_cwd(int fd) {
 
 	if (return_val == 0) {
 		char TEMP[50];
-		TEMP[0] = '\0';
+		TEMP[0] = '/';
+		TEMP[1] = '\0';
 		strcat(TEMP, dest);
-		strcpy(CUR_DIR, TEMP);
-		
+		// strcpy(CUR_DIR, TEMP);
+		sprintf(CUR_DIR, "%s/%s", CUR_DIR, dest);
+
 		char* response =  handle_messages(200);
 		char* TEMP_RES = malloc(BUFFER_SIZE);
 		// bzero(TEMP_RES, sizeof(TEMP_RES));
