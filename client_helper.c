@@ -14,7 +14,7 @@ void displayIntro() {
 
 void handle_port(int cfd, char* PORT_VAL) {
 	struct sockaddr_in sa;
-	int sa_len;
+	socklen_t sa_len;
 
 	sa_len = sizeof(sa);
 	// get client address and port
@@ -66,7 +66,7 @@ int handle_commands(int fd, char* command, char** CDIR) {
 		system(exec);		// this runs the actual command like in terminal
 		return 1;			// return 1 to denote that this command is taken care of and no need to send to server
 	} else if (strcmp(token, "!PWD") == 0) {
-		printf("%s\n", CUR_DIR);		// CUR_DIR is the whole path because root which is CLIENT_DIR
+		printf("%s\n", CUR_DIR);		// CUR_DIR is the whole path except root which is CLIENT_DIR
 		return 1;
 	} else if (strcmp(token, "!CWD") == 0) {
 		char* dest = strtok(NULL, "\n");		// get rest of the path
@@ -119,6 +119,7 @@ int handle_commands(int fd, char* command, char** CDIR) {
 		int bytes = recv(fd,buffer,sizeof(buffer),0);
 		PORT_OFFSET+=1;
 		printf("%s\n", buffer);
+
 		return 0; //because it needs to be handled on server after this
 	}
 

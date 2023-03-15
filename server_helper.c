@@ -3,6 +3,12 @@
 #include "server_helper.h"
 #include<string.h>
 
+#include<sys/socket.h>
+#include<arpa/inet.h>
+#include<netinet/in.h>
+#include<sys/select.h>
+#include<unistd.h>
+
 #define BUFFER_SIZE 1024
 
 char* handle_messages(int code) {
@@ -114,7 +120,7 @@ char* handle_stor(int fd) {
 }
 
 char* handle_retr(int fd) {
-	printf("NA\n");
+	printf("Inside handle_retr\n");
 	return "NA";
 }
 
@@ -142,6 +148,114 @@ char* handle_list(int fd) {
 	// printf("Output:\n%s\n", output);
 	return "NA";
 }
+
+char* handle_data(int fd, int token) {
+
+	char* response = malloc(BUFFER_SIZE);
+	bzero(response, BUFFER_SIZE);
+	int pid = fork(); //fork a child process
+	int status;
+	if(pid == 0)   //if it is the child process
+	{
+		// close(session[fd].server_sd);
+		// if(send(session[fd].server_sd,"150 File status okay; about to open data connection.",strlen("150 File status okay; about to open data connection."),0)<0) //sending the message to client
+        // {
+        //     perror("send");
+        //     exit(-1);
+        // }
+
+		char buffer[256];
+		// recv(session[fd].server_sd,buffer,sizeof(buffer),0);
+		// // send(fd, "150 File status okay; about to open data connection.", strlen("150 File status okay; about to open data connection."));
+		// // close(fd);
+		// close(session[fd].server_sd);
+		int data_sd = socket(AF_INET,SOCK_STREAM,0);
+		printf("Data sd = %d \n",data_sd);
+		if(data_sd<0)
+		{
+			perror("socket:");
+			exit(-1);
+		}
+		//setsock for data connection
+		int value  = 1;
+		setsockopt(data_sd,SOL_SOCKET,SO_REUSEADDR,&value,sizeof(value)); //&(int){1},sizeof(int)
+
+
+		struct sockaddr_in serv_data_addr;
+		bzero(&serv_data_addr,sizeof(serv_data_addr));
+		serv_data_addr.sin_family = AF_INET;
+		serv_data_addr.sin_port = htons(9000);
+		serv_data_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY, INADDR_LOOP
+		
+		printf("before bind\n");
+		//bind
+		if(bind(data_sd, (struct sockaddr*)&serv_data_addr,sizeof(serv_data_addr))<0)
+		{
+			perror("bind failed");
+			exit(-1);
+		}
+
+		//store client data exchange address
+		struct sockaddr_in cli_data_addr; 
+		bzero(&cli_data_addr, sizeof(cli_data_addr)); 
+		cli_data_addr.sin_family = AF_INET;
+		printf("before port\n");
+		printf("%d\n", session[fd].port);
+		printf("%s\n", session[fd].host);
+		cli_data_addr.sin_port = htons(session[fd].port);
+		cli_data_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+		socklen_t len = sizeof(serv_data_addr); 
+		// connect data exchange socket to client address for data exchange
+
+		printf("before connect\n");
+		if (connect(data_sd, (struct sockaddr*)&cli_data_addr, sizeof(cli_data_addr)) < 0)
+		{
+			perror("connect");
+			exit(-1);
+		}
+		printf("after connect\n");
+
+		// printf("before accept\n");
+		// int transfer_sd = accept(data_sd,(struct sockaddr *)&cli_data_addr,&len);
+		// printf("accepted\n");
+
+		if (token == 0) {
+			// char* file_name = strtok(NULL, \n);
+			strcpy(response, handle_stor(fd));
+		}
+		else if (token == 1) {
+			strcpy(response, handle_retr(fd));
+		}
+		else if (token == 2) {
+			strcpy(response, handle_list(fd));
+		}
+
+		printf("%s\n", response);
+		// send it as char array
+		if(send(data_sd,"hi from server data",strlen("hi from server data"),0)<0) //sending the message to server
+        {
+            perror("send");
+            exit(-1);
+        }
+
+		bzero(buffer, sizeof(buffer));
+		recv(data_sd,buffer,sizeof(buffer),0);
+		printf("%s\n", buffer);
+		// close(transfer_sd);
+		close(data_sd);
+		exit(0);
+	}
+	else {
+		wait(&status);
+		printf("parent response: %s\n", response);
+		return response;
+	}
+
+
+}
+
+
+
 
 char* handle_cwd(int fd) {
 	char* BASE_DIR = "server_dir";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
@@ -215,11 +329,11 @@ void handle_commands(int fd, char* command, char* message) {
 	} else if (strcmp(token, "PORT") == 0) {
 		response = authenticated == 2 ? handle_port(fd) : handle_messages(503);
 	} else if (strcmp(token, "STOR") == 0) {
-		response = authenticated == 2 ? handle_stor(fd) : handle_messages(503);
+		response = authenticated == 2 ? handle_data(fd, 0) : handle_messages(503);
 	} else if (strcmp(token, "RETR") == 0) {
-		response = authenticated == 2 ? handle_retr(fd) : handle_messages(503);
+		response = authenticated == 2 ? handle_data(fd, 1) : handle_messages(503);
 	} else if (strcmp(token, "LIST") == 0) {
-		response = authenticated == 2 ? handle_list(fd) : handle_messages(503);
+		response = authenticated == 2 ? handle_data(fd, 2) : handle_messages(503);
 	} else if (strcmp(token, "CWD") == 0) {
 		response = authenticated == 2 ? handle_cwd(fd) : handle_messages(503);
 	} else if (strcmp(token, "PWD") == 0) {
@@ -231,7 +345,8 @@ void handle_commands(int fd, char* command, char* message) {
 	}
 
 	strcpy(message, response);
-	free(response);
+	bzero(response, strlen(response));
+	// free(response);
 }
 
 // Send password for PASS command to check for username and password

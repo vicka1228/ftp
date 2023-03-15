@@ -42,7 +42,7 @@ int main()
 	struct sockaddr_in server_addr;
 	bzero(&server_addr,sizeof(server_addr));
 	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(5000);
+	server_addr.sin_port = htons(7000);
 	server_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY, INADDR_LOOP
 
 	//bind
@@ -91,7 +91,7 @@ int main()
 				{
 					int client_sd = accept(server_sd,0,0);
 					printf("Client Connected fd = %d \n",client_sd);
-					
+					session[fd].server_sd = server_sd; 
 					// printf("here\n");
 					
 					FD_SET(client_sd,&full_fdset);
@@ -105,9 +105,11 @@ int main()
 					char buffer[256];		// variable to store incoming message
 					
 					bzero(buffer,sizeof(buffer));
-					int bytes = recv(fd,buffer,sizeof(buffer),0);
+					int bytes = recv(fd,buffer,sizeof(buffer),0); 
+					// also potentially reset client session here
 					if(bytes==0) // to handle Ctrl+C from client side
 					{
+						bzero(&session[fd], sizeof(session[fd]));
 						close(fd);
 						printf("connection closed from client\n");
 						FD_CLR(fd,&full_fdset);
@@ -130,7 +132,7 @@ int main()
 							perror("send");
 							exit(-1);
 						}
-	
+						bzero(&session[fd], sizeof(session[fd]));
 						close(fd);
 						printf("connection closed from client\n");
 						FD_CLR(fd,&full_fdset);

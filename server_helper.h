@@ -3,6 +3,7 @@ struct User {
     char uname[50];         // after adding username, store here
     char host[50];
     int port;
+    int server_sd;
 };
 extern struct User session[100];        // global array to store all sessions
 extern char CUR_DIR[100];
