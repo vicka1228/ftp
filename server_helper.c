@@ -43,6 +43,9 @@ char* handle_messages(int code) {
 	case 503:
 		strcpy(code_message,"503 Bad sequence of commands.");
 		break;
+	case 504:
+		strcpy(code_message,"504 Command not implemented for that parameter.");
+		break;
 	case 530:
 		strcpy(code_message,"530 Not Logged In");
 		break;
@@ -136,9 +139,26 @@ char* handle_stor(int fd) {
 	printf("%s\n", response);
 	char* filename = strtok(NULL, "\n");
 	printf("%s\n", filename);
+	char* BASE_DIR = "server_dir";
+	sprintf(BASE_DIR, "%s/%s", BASE_DIR, session[fd].uname);
+	
+	// char FULL_DIR[101];
+	// FULL_DIR[0] = '\0';			// to signify char array as empty string, I can put in null character in the beginning
+
+	// sprintf helps concatenate like printf
+	
+
+	char FILE_DIR[BUFFER_SIZE];
+	FILE_DIR[0] = '\0';
+
+	if(strcmp(CUR_DIR, "/")==0){
+		sprintf(FILE_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
+	}
+	
+	printf("file path: %s\n", FILE_DIR);
     // Open file for writing
 	//potentially have temp file name
-    file = fopen(filename, "w"); //potentially check wb
+    file = fopen(FILE_DIR, "wb"); //potentially check wb
     if (file == NULL) {
 		printf("file null\n");
         return response;
@@ -233,6 +253,7 @@ char* handle_retr(int fd) {
 
 	// this is the base directory starts from on server side
 	char* BASE_DIR = "server_dir";
+	sprintf(BASE_DIR, "%s/%s", BASE_DIR, session[fd].uname);
 	
 	// char FULL_DIR[101];
 	// FULL_DIR[0] = '\0';			// to signify char array as empty string, I can put in null character in the beginning
@@ -301,6 +322,7 @@ char* handle_list(int fd) {
     struct dirent* entry;
 
 	char* BASE_DIR = "server_dir";
+	sprintf(BASE_DIR, "%s/%s", BASE_DIR, session[fd].uname);
 	char FULL_DIR[BUFFER_SIZE];
 	FULL_DIR[0] = '\0';
 
@@ -467,17 +489,54 @@ char* handle_data(int fd, int token) {
 
 
 char* handle_cwd(int fd) {
-	char* BASE_DIR = "server_dir";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
+	printf("inside handle cwd\n");
+	char BASE_DIR[BUFFER_SIZE];
+	BASE_DIR[0] = '\0';
+	char* base = "server_dir";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
+	printf("uname:%s\n", session[fd].uname);
+	sprintf(BASE_DIR, "%s/%s", base, session[fd].uname);
 	char* dest = strtok(NULL, "\n");
-
+	printf("dest: %s\n", dest);
 	if (dest == NULL) {
-		return handle_messages(202);
+		return handle_messages(202); //potentially change error message
 	}
-
+	// add check for ..
 	char NEW_DIR[BUFFER_SIZE];
 	NEW_DIR[0] = '\0';
 
-	sprintf(NEW_DIR, "%s%s/%s", BASE_DIR, CUR_DIR, dest);
+	if(dest[0]=='/'){
+		int i;
+		for (i = 0; dest[i] != '\0'; i++) {
+			dest[i] = dest[i+1];
+   		}
+	}
+	int len = strlen(dest);
+    if (len > 0) {
+		if(dest[len-1]=='/'){
+			dest[len-1] = '\0';
+		}        
+    }
+
+	if(strcmp(dest, "..")==0){
+		return handle_messages(504);
+	}
+
+
+	if(CUR_DIR[0]=='/'){
+		int i;
+		for (i = 0; CUR_DIR[i] != '\0'; i++) {
+			CUR_DIR[i] = CUR_DIR[i+1];
+    }
+	}
+	// dest = strtok(dest, "/");
+	printf("before sprintf\n");
+	if(strcmp(CUR_DIR, "")==0){
+		sprintf(NEW_DIR, "%s/%s", BASE_DIR, dest);
+	}
+	else{
+		sprintf(NEW_DIR, "%s/%s/%s", BASE_DIR, CUR_DIR, dest);
+	}
+	printf("%s\n", NEW_DIR);
 
 	char exec[strlen(NEW_DIR) + 4];
 	exec[0] = '\0';
@@ -488,11 +547,20 @@ char* handle_cwd(int fd) {
 
 	if (return_val == 0) {
 		char TEMP[50];
-		TEMP[0] = '/';
-		TEMP[1] = '\0';
+		// TEMP[0] = '/';
+		TEMP[0] = '\0';
 		strcat(TEMP, dest);
 		// strcpy(CUR_DIR, TEMP);
-		sprintf(CUR_DIR, "%s/%s", CUR_DIR, dest);
+		if(strcmp(dest,".")!=0){
+			if(strcmp(CUR_DIR, "")!=0){
+				sprintf(CUR_DIR, "/%s/%s", CUR_DIR, dest);
+			}
+			else{
+				sprintf(CUR_DIR, "/%s", dest);
+			}
+			
+		}
+		
 
 		char* response =  handle_messages(200);
 		char* TEMP_RES = malloc(BUFFER_SIZE);
@@ -515,8 +583,9 @@ char* handle_pwd(int fd) {
 	// bzero(TEMP, sizeof(TEMP));
 	bzero(TEMP, BUFFER_SIZE);
 	strcpy(TEMP, response);
-
-	strcat(TEMP, CUR_DIR);
+	char* BASE_DIR = "server_dir";
+	sprintf(TEMP, "%s%s/%s%s", TEMP, BASE_DIR, session[fd].uname, CUR_DIR);
+	// strcat(TEMP, CUR_DIR);
 	return TEMP;	
 }
 

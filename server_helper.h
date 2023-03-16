@@ -6,7 +6,7 @@ struct User {
     int server_sd;
 };
 extern struct User session[100];        // global array to store all sessions
-extern char CUR_DIR[100];
+extern char CUR_DIR[256];
 
 int check_user_pass(char*, char*);
 void handle_commands(int, char*, char*);

@@ -161,7 +161,7 @@ void handle_retr(int transfer_sd, char* filename) {
 
 void handle_stor(int transfer_sd, char* filename, char** CDIR) {
 	char* CUR_DIR = *CDIR;
-
+	printf("%s\n", CUR_DIR);
 	// this is the base directory starts from on client side
 	char* BASE_DIR = "client_dir";
 	

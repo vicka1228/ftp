@@ -1,4 +1,5 @@
 // extern char* CUR_DIR;
+extern char CUR_DIR[256];
 extern int PORT_OFFSET;
 
 void displayIntro();
