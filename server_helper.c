@@ -27,6 +27,9 @@ char* handle_messages(int code) {
 	case 202:
 		strcpy(code_message,"202 Command not implemented.");
 		break;
+	case 226:
+		strcpy(code_message,"226 Transfer completed.");
+		break;
 	case 230:
 		strcpy(code_message,"230 User logged in, proceed.");
 		break;
@@ -44,6 +47,9 @@ char* handle_messages(int code) {
 		break;
 	case 550:
 		strcpy(code_message,"550 No such file or directory.");
+		break;
+	case 551:
+		strcpy(code_message,"551 Could not create file or directory.");
 		break;
 	default:
 		strcpy(code_message,"Unexpected Error");
@@ -116,15 +122,103 @@ char* handle_port(int fd) {
 }
 
 char* handle_stor(int fd) {
-	return "NA";
+	char buffer[BUFFER_SIZE];
+	bzero(buffer, sizeof(buffer));
+	printf("Buffer: %s\n", buffer);
+    int bytes_read;
+    FILE* file;
+
+	char* response = handle_messages(551);
+	printf("%s\n", response);
+	char* filename = strtok(NULL, "\n");
+	printf("%s\n", filename);
+    // Open file for writing
+    file = fopen(filename, "w");
+    if (file == NULL) {
+		printf("file null\n");
+        return response;
+		// return;
+    }
+
+    // Read data from client and write to file
+    // while ((bytes_read = recv(fd, buffer, BUFFER_SIZE, 0)) > 0) {
+	// 	printf("write\n");
+    //     fwrite(buffer, sizeof(char), bytes_read, file);
+	// 	printf("after fwrite\n");
+    // }
+	do
+	{
+		bzero(buffer, sizeof(buffer));
+		printf("write\n");
+		bytes_read = recv(fd,buffer,sizeof(buffer),0);
+		printf("%s\n", buffer);
+		if(strcmp(buffer, "end")==0){
+			break;
+		}
+		if(bytes_read>0)
+		{
+			fwrite(buffer, sizeof(char), bytes_read,file);
+			printf("after fwrite\n");
+		}
+			
+		else if (bytes_read == 0) {
+			printf("Client has disconnected.\n");
+			break;
+		}
+		
+
+	}while(bytes_read>0);
+
+	printf("after bytes read\n");
+    // Close file
+    fclose(file);
+	bzero(response, strlen(response));
+	response = handle_messages(226);
+	// response = "226 Transfer completed.";
+	char resp[256];
+	strcpy(resp,"226 Transfer completed.");
+	printf("resp: %s\n", resp);
+	printf("response: %s\n", response);
+
+	// char* test = malloc(256);
+	// bzero(test,256);
+	// strcpy(test, "226 Transfer completed.");
+
+	// if(send(fd,test,strlen(test),0)<0) //sending the message to client
+	// {
+	// 	perror("send");
+	// 	exit(-1);
+	// }
+
+	// free(test);
+	
+	// if(send(fd,response,strlen(response),0)<0) //sending the message to client
+	// {
+	// 	perror("send");
+	// 	exit(-1);
+	// }
+
+	// if(send(fd,resp,sizeof(response),0)<0) //sending the message to client
+	// {
+	// 	perror("send");
+	// 	exit(-1);
+	// }
+
+	// if(send(fd,"226 Transfer completed.",strlen("226 Transfer completed."),0)<0) //sending the message to client
+	// {
+	// 	perror("send");
+	// 	exit(-1);
+	// }
+	return response;
+	// return;
 }
 
-char* handle_retr(int fd) {
+char* handle_retr(int fd, int data_sd) {
 	printf("Inside handle_retr\n");
 	return "NA";
 }
 
-char* handle_list(int fd) {
+char* handle_list(int fd, int data_sd) {
 	// char command[100];
 	// command[0] = '\0';
 	// char buffer[BUFFER_SIZE];
@@ -158,16 +252,16 @@ char* handle_data(int fd, int token) {
 	if(pid == 0)   //if it is the child process
 	{
 		// close(session[fd].server_sd);
-		// if(send(session[fd].server_sd,"150 File status okay; about to open data connection.",strlen("150 File status okay; about to open data connection."),0)<0) //sending the message to client
-        // {
-        //     perror("send");
-        //     exit(-1);
-        // }
+		if(send(fd,"150 File status okay; about to open data connection.",strlen("150 File status okay; about to open data connection."),0)<0) //sending the message to client
+        {
+            perror("send");
+            exit(-1);
+        }
 
 		char buffer[256];
-		// recv(session[fd].server_sd,buffer,sizeof(buffer),0);
+		recv(fd,buffer,sizeof(buffer),0);
 		// // send(fd, "150 File status okay; about to open data connection.", strlen("150 File status okay; about to open data connection."));
-		// // close(fd);
+		// close(fd);
 		// close(session[fd].server_sd);
 		int data_sd = socket(AF_INET,SOCK_STREAM,0);
 		printf("Data sd = %d \n",data_sd);
@@ -203,7 +297,7 @@ char* handle_data(int fd, int token) {
 		printf("%d\n", session[fd].port);
 		printf("%s\n", session[fd].host);
 		cli_data_addr.sin_port = htons(session[fd].port);
-		cli_data_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+		cli_data_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //potentially change
 		socklen_t len = sizeof(serv_data_addr); 
 		// connect data exchange socket to client address for data exchange
 
@@ -218,19 +312,6 @@ char* handle_data(int fd, int token) {
 		// printf("before accept\n");
 		// int transfer_sd = accept(data_sd,(struct sockaddr *)&cli_data_addr,&len);
 		// printf("accepted\n");
-
-		if (token == 0) {
-			// char* file_name = strtok(NULL, \n);
-			strcpy(response, handle_stor(fd));
-		}
-		else if (token == 1) {
-			strcpy(response, handle_retr(fd));
-		}
-		else if (token == 2) {
-			strcpy(response, handle_list(fd));
-		}
-
-		printf("%s\n", response);
 		// send it as char array
 		if(send(data_sd,"hi from server data",strlen("hi from server data"),0)<0) //sending the message to server
         {
@@ -241,6 +322,29 @@ char* handle_data(int fd, int token) {
 		bzero(buffer, sizeof(buffer));
 		recv(data_sd,buffer,sizeof(buffer),0);
 		printf("%s\n", buffer);
+
+		if (token == 0) {
+			// char* file_name = strtok(NULL, \n);
+			// strcpy(response, handle_stor(data_sd));
+
+			response = handle_stor(data_sd);
+			printf("response in token 0: %s\n", response);
+			if(send(fd,response,strlen(response),0)<0) //sending the message to client
+			{
+				perror("send");
+				exit(-1);
+			}
+			
+		}
+		else if (token == 1) {
+			strcpy(response, handle_retr(fd, data_sd));
+		}
+		else if (token == 2) {
+			strcpy(response, handle_list(fd, data_sd));
+		}
+
+		printf("%s\n", response);
+		
 		// close(transfer_sd);
 		close(data_sd);
 		exit(0);

@@ -125,3 +125,65 @@ int handle_commands(int fd, char* command, char** CDIR) {
 
 	return 0;
 }
+
+void handle_retr(int transfer_sd, char* filename) {
+
+}
+
+void handle_stor(int transfer_sd, char* filename, char** CDIR) {
+	char* CUR_DIR = *CDIR;
+
+	// this is the base directory starts from on client side
+	char* BASE_DIR = "client_dir";
+	
+	char FULL_DIR[101];
+	FULL_DIR[0] = '\0';			// to signify char array as empty string, I can put in null character in the beginning
+
+	// sprintf helps concatenate like printf
+	sprintf(FULL_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
+	printf("file path: %s\n", FULL_DIR);
+	// Open file for reading
+	printf("inside handle_stor\n");
+	int bytes_read;
+	char buffer[1024];
+	bzero(buffer, sizeof(buffer));
+	printf("Buffer: %s\n", buffer);
+    FILE* file = fopen(FULL_DIR, "rb");
+	// FILE* file = fopen(filename, "rb");
+    if (file == NULL) {
+		printf("inside file null\n");
+        // perror("fopen");
+        // exit(-1);
+		printf("550 No such file or directory.\n");
+		exit(-1);
+    }
+
+    // Read data from file and send to server
+    while ((bytes_read = fread(buffer, sizeof(char), 1024, file)) > 0) {
+		printf("inside bytes read\n");
+        if (send(transfer_sd, buffer, bytes_read, 0) == -1) {
+            perror("send");
+            exit(-1);
+        }
+    }
+
+	// if (send(transfer_sd, "end", strlen("end"), 0) == -1) {
+    //         perror("send");
+    //         exit(-1);
+    // }
+	printf("after bytes read\n");
+	// char msg[256];
+	// char* msg = malloc(256);
+	// bzero(msg, 256);
+	// recv(transfer_sd,msg,256,0);
+	// printf("msg: %s\n", msg);
+	// free(msg);
+	// bzero(buffer,sizeof(buffer));
+	// recv(transfer_sd,buffer,sizeof(buffer),0);
+	// printf("%s\n", buffer);
+	return;
+}
+
+void handle_list(int transfer_sd) {
+	
+}

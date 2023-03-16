@@ -98,8 +98,8 @@ int main()
 					// close(server_sd);
 					printf("inside child\n");
 					char buffer[256];
-					// recv(server_sd,buffer,sizeof(buffer),0);
-					// printf("%s\n", buffer);
+					recv(server_sd,buffer,sizeof(buffer),0);
+					printf("%s\n", buffer);
 					// printf("inside child\n");
 					int data_sd = socket(AF_INET,SOCK_STREAM,0);
 					printf("Data sd = %d \n",data_sd);
@@ -148,13 +148,13 @@ int main()
 					}
 					printf("after listen\n");
 
-					// if(send(server_sd,"ok",strlen("ok"),0)<0) //sending the message to server
-					// {
-					// 	perror("send");
-					// 	exit(-1);
-					// }
+					if(send(server_sd,"ok",strlen("ok"),0)<0) //sending the message to server
+					{
+						perror("send");
+						exit(-1);
+					}
 
-					
+					close(server_sd);
 
 					struct sockaddr_in serv_data_addr;
 					bzero(&serv_data_addr,sizeof(serv_data_addr));
@@ -178,13 +178,37 @@ int main()
 					recv(transfer_sd,buffer,sizeof(buffer),0);
 					printf("%s\n", buffer);
 			
-
+					// remove these
 					if(send(transfer_sd,"hi from client data",strlen("hi from client data"),0)<0) //sending the message to server
 					{
 						perror("send");
 						exit(-1);
 					}
 
+					printf("%s\n", token);
+
+					bzero(buffer,sizeof(buffer));
+					
+
+					if(strcmp(token, "RETR") == 0){
+						char* filename = strtok(NULL, "\n");
+						handle_retr(transfer_sd, filename);
+					}
+					else if(strcmp(token, "STOR") == 0){
+						printf("inside stor\n");
+						char* filename = strtok(NULL, "\n");
+						printf("%s\n", filename);
+						handle_stor(transfer_sd, filename, &CUR_DIR);
+						// recv(transfer_sd,buffer,sizeof(buffer),0);
+						// printf("%s\n", buffer);
+						close(transfer_sd);
+						close(data_sd);
+
+						exit(0);
+
+					}else if(strcmp(token, "LIST") == 0){
+						handle_list(transfer_sd);
+					}
 					
 					close(transfer_sd);
 					close(data_sd);
@@ -195,6 +219,9 @@ int main()
 					// close(transfer_sd);
 					// close(data_sd);
 					wait(&status);
+					bzero(buffer,sizeof(buffer));	
+					int bytes = recv(server_sd,buffer,sizeof(buffer),0);
+					printf("%s\n", buffer);
 
 				}
 			}
