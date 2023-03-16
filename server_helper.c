@@ -40,6 +40,9 @@ char* handle_messages(int code) {
 	case 331:
 		strcpy(code_message,"331 Username OK, need password.");
 		break;
+	case 501:
+		strcpy(code_message,"501 Syntax error in parameters or arguments.");
+		break;
 	case 503:
 		strcpy(code_message,"503 Bad sequence of commands.");
 		break;
@@ -53,10 +56,7 @@ char* handle_messages(int code) {
 		strcpy(code_message,"550 No such file or directory.");
 		break;
 	case 551:
-		strcpy(code_message,"551 Could not create file or directory.");
-		break;
-	case 552:
-		strcpy(code_message,"552 Error during data transfer.");
+		strcpy(code_message,"551 Requested action aborted: page type unknown.");
 		break;
 	default:
 		strcpy(code_message,"Unexpected Error");
@@ -88,43 +88,34 @@ char* handle_pass(int fd) {
 	if (check_user_pass(session[fd].uname, password) == 1) {
 		response = handle_messages(230);
 		session[fd].state = 2;			// state == 2 means user is now authenticated
-		// potentially make directory for the client here
-		sprintf(CUR_DIR, "%s%s/", CUR_DIR, session[fd].uname);
+		// store directory for the client 
+		sprintf(session[fd].CUR_DIR, "server_dir/%s/", session[fd].uname);
 	}
 
 	return response;
 }
 
 char* handle_port(int fd) {
-	printf("inside handle port\n");
+	
 	char* host_id = strtok(NULL, " ");
 	
-	printf("%s\n", host_id);
+	// printf("%s\n", host_id);
 
+	//parsing
 	char* h1 = strtok(host_id, ",");
-	printf("%s\n", h1);
 	char* h2 = strtok(NULL, ",");
-	printf("%s\n", h2);
 	char* h3 = strtok(NULL, ",");
-	printf("%s\n", h3);
 	char* h4 = strtok(NULL, ",");
-	printf("%s\n", h4);
 	char* p1 = strtok(NULL, ",");
-	printf("%s\n", p1);
 	char* p2 = strtok(NULL, ",");
-	printf("%s\n", p2);
 
 	// STORE THE PORT FOR THE CLIENT
 	session[fd].port = (atoi(p1)*256)+atoi(p2);
-	printf("%d\n", session[fd].port);
 
 	char host[50];
 	sprintf(host, "%s.%s.%s.%s", h1, h2, h3, h4);
-	printf("%s\n", host);
 	// store host for client
 	strcpy(session[fd].host, host);
-	// *session[fd].host = *host;
-	printf("%s\n", session[fd].host);
 	
 	char* response = handle_messages(201);
 	return response;
@@ -138,97 +129,68 @@ char* handle_stor(int fd, int data_sd) {
     FILE* file;
 
 	char* response = handle_messages(551);
-	printf("%s\n", response);
 	char* filename = strtok(NULL, "\n");
-	printf("%s\n", filename);
 
 	char FILE_DIR[BUFFER_SIZE];
 	FILE_DIR[0] = '\0';
 	
-	sprintf(FILE_DIR, "%s%s", CUR_DIR, filename);
-	printf("file path: %s\n", FILE_DIR);
+	sprintf(FILE_DIR, "%s%s", session[fd].CUR_DIR, filename);
+	// printf("file path: %s\n", FILE_DIR);
     // Open file for writing
-	//potentially have temp file name
-    file = fopen(FILE_DIR, "wb"); //potentially check wb
+    file = fopen(FILE_DIR, "wb"); 
     if (file == NULL) {
-		printf("file null\n");
         return response;
-		// return;
     }
 	
     // Read data from client and write to file
-    // while ((bytes_read = recv(data_sd, buffer, BUFFER_SIZE, 0)) > 0) {
-	// 	printf("write\n");
-    //     fwrite(buffer, sizeof(char), bytes_read, file);
-	// 	printf("after fwrite\n");
-    // }
-	do
-	{
-		bzero(buffer, sizeof(buffer));
-		printf("write\n");
-		bytes_read = recv(data_sd,buffer,sizeof(buffer),0);
-		printf("%s\n", buffer);
-		if(strcmp(buffer, "end")==0){
-			break;
-		}
-		if(bytes_read>0)
-		{
-			fwrite(buffer, sizeof(char), bytes_read,file);
-			printf("after fwrite\n");
-		}
-			
-		else if (bytes_read == 0) {
-			printf("Client has disconnected.\n");
-			break;
-		}
-		
+    while ((bytes_read = recv(data_sd, buffer, BUFFER_SIZE, 0)) > 0) {
+		// printf("write\n");
+        fwrite(buffer, sizeof(char), bytes_read, file);
+		// printf("after fwrite\n");
+    }
+	
 
-	}while(bytes_read>0);
-
-	printf("after bytes read\n");
+	// printf("after bytes read\n");
     // Close file
     fclose(file);
 	bzero(response, strlen(response));
 	response = handle_messages(226);
-	// response = "226 Transfer completed.";
-	char resp[256];
-	strcpy(resp,"226 Transfer completed.");
-	printf("resp: %s\n", resp);
-	printf("response: %s\n", response);
-
 	return response;
 	// return;
 }
 
 char* handle_retr(int fd, int data_sd) {
-	printf("Inside handle_retr\n");
 	char buffer[BUFFER_SIZE];
 	bzero(buffer, sizeof(buffer));
     int bytes_read;
     FILE* file;
 
 	char* response = handle_messages(550);
-	printf("%s\n", response);
+	// printf("%s\n", response);
 	char* filename = strtok(NULL, "\n");
-	printf("%s\n", filename);
+	// printf("%s\n", filename);
 	
 	char FILE_DIR[BUFFER_SIZE];
 	FILE_DIR[0] = '\0';
 
-	sprintf(FILE_DIR, "%s%s", CUR_DIR, filename);
-	printf("file path: %s\n", FILE_DIR);
-
+	sprintf(FILE_DIR, "%s%s", session[fd].CUR_DIR, filename);
+	
     // Open file for reading
-    file = fopen(FILE_DIR, "rb");
-    if (file == NULL) {
-        return response;
-    }
+	 if (access(FILE_DIR, F_OK) == 0) {
+		file = fopen(FILE_DIR, "rb");
+    	if (file == NULL) {
+			return response;
+		}
+	 }
+    else {
+		return response;
+	}
 
     // Read data from file and send to client
     while ((bytes_read = fread(buffer, sizeof(char), BUFFER_SIZE, file)) > 0) {
         if (send(data_sd, buffer, bytes_read, 0) == -1) {
             fclose(file);
-			response = handle_messages(552);
+			response = handle_messages(551);
             return response;
         }
     }
@@ -247,7 +209,7 @@ char* handle_list(int fd, int data_sd) {
     struct dirent* entry;
 
     // Open directory
-    dir = opendir(CUR_DIR);
+    dir = opendir(session[fd].CUR_DIR);
 	char* response = handle_messages(550);
     if (dir == NULL) {
         return response;
@@ -260,7 +222,7 @@ char* handle_list(int fd, int data_sd) {
 			bytes_written = send(data_sd, buffer, strlen(buffer), 0);
 			if (bytes_written == -1) {
 				closedir(dir);
-				response = handle_messages(552);
+				response = handle_messages(551);
 				return response;
 			}
 		}
@@ -291,9 +253,7 @@ char* handle_data(int fd, int token) {
 
 		char buffer[256];
 		recv(fd,buffer,sizeof(buffer),0);
-		// // send(fd, "150 File status okay; about to open data connection.", strlen("150 File status okay; about to open data connection."));
-		// close(fd);
-		// close(session[fd].server_sd);
+		
 		int data_sd = socket(AF_INET,SOCK_STREAM,0);
 		printf("Data sd = %d \n",data_sd);
 		if(data_sd<0)
@@ -312,7 +272,7 @@ char* handle_data(int fd, int token) {
 		serv_data_addr.sin_port = htons(9000);
 		serv_data_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY, INADDR_LOOP
 		
-		printf("before bind\n");
+		// printf("before bind\n");
 		//bind
 		if(bind(data_sd, (struct sockaddr*)&serv_data_addr,sizeof(serv_data_addr))<0)
 		{
@@ -324,26 +284,22 @@ char* handle_data(int fd, int token) {
 		struct sockaddr_in cli_data_addr; 
 		bzero(&cli_data_addr, sizeof(cli_data_addr)); 
 		cli_data_addr.sin_family = AF_INET;
-		printf("before port\n");
-		printf("%d\n", session[fd].port);
-		printf("%s\n", session[fd].host);
+		// printf("before port\n");
+		// printf("%d\n", session[fd].port);
+		// printf("%s\n", session[fd].host);
 		cli_data_addr.sin_port = htons(session[fd].port);
 		cli_data_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //potentially change
 		socklen_t len = sizeof(serv_data_addr); 
 		// connect data exchange socket to client address for data exchange
 
-		printf("before connect\n");
+		// printf("before connect\n");
 		if (connect(data_sd, (struct sockaddr*)&cli_data_addr, sizeof(cli_data_addr)) < 0)
 		{
 			perror("connect");
 			exit(-1);
 		}
-		printf("after connect\n");
+		// printf("after connect\n");
 
-		// printf("before accept\n");
-		// int transfer_sd = accept(data_sd,(struct sockaddr *)&cli_data_addr,&len);
-		// printf("accepted\n");
-		// send it as char array
 		if(send(data_sd,"hi from server data",strlen("hi from server data"),0)<0) //sending the message to server
         {
             perror("send");
@@ -352,14 +308,13 @@ char* handle_data(int fd, int token) {
 
 		bzero(buffer, sizeof(buffer));
 		recv(data_sd,buffer,sizeof(buffer),0);
-		printf("%s\n", buffer);
+		// printf("%s\n", buffer);
 
+		//stor
 		if (token == 0) {
-			// char* file_name = strtok(NULL, \n);
-			// strcpy(response, handle_stor(data_sd));
 
 			response = handle_stor(fd, data_sd);
-			printf("response in token 0: %s\n", response);
+			// printf("response in token 0: %s\n", response);
 			if(send(fd,response,strlen(response),0)<0) //sending the message to client
 			{
 				perror("send");
@@ -367,9 +322,10 @@ char* handle_data(int fd, int token) {
 			}
 			
 		}
+		// retr
 		else if (token == 1) {
 			response = handle_retr(fd, data_sd);
-			printf("response in token 1: %s\n", response);
+			// printf("response in token 1: %s\n", response);
 			close(data_sd);
 			if(send(fd,response,strlen(response),0)<0) //sending the message to client
 			{
@@ -377,9 +333,10 @@ char* handle_data(int fd, int token) {
 				exit(-1);
 			}
 		}
+		//list
 		else if (token == 2) {
 			response = handle_list(fd, data_sd);
-			printf("response in token 2: %s\n", response);
+			// printf("response in token 2: %s\n", response);
 			close(data_sd);
 			if(send(fd,response,strlen(response),0)<0) //sending the message to client
 			{
@@ -387,16 +344,12 @@ char* handle_data(int fd, int token) {
 				exit(-1);
 			}
 		}
-
-		printf("%s\n", response);
-		
-		// close(transfer_sd);
+	
 		close(data_sd);
 		exit(0);
 	}
 	else {
 		wait(&status);
-		printf("parent response: %s\n", response);
 		return response;
 	}
 
@@ -407,14 +360,12 @@ char* handle_data(int fd, int token) {
 
 
 char* handle_cwd(int fd) {
-	printf("inside handle cwd\n");
 	
 	char* dest = strtok(NULL, "\n");
-	printf("dest: %s\n", dest);
 	if (dest == NULL) {
-		return handle_messages(202); //potentially change error message
+		return handle_messages(501); 
 	}
-	// add check for ..
+	
 	char NEW_DIR[BUFFER_SIZE];
 	NEW_DIR[0] = '\0';
 
@@ -433,14 +384,12 @@ char* handle_cwd(int fd) {
 			dest[len-1] = '\0';
 		}        
     }
-
+	//not implementing so that you cannot switch user directories
 	if(strcmp(dest, "..")==0){
 		return handle_messages(504);
 	}
 
-	printf("before sprintf\n");
-
-	sprintf(NEW_DIR, "%s%s", CUR_DIR, dest);
+	sprintf(NEW_DIR, "%s%s", session[fd].CUR_DIR, dest);
 	printf("%s\n", NEW_DIR);
 
 	char exec[strlen(NEW_DIR) + 4];
@@ -457,9 +406,9 @@ char* handle_cwd(int fd) {
 		// strcpy(CUR_DIR, TEMP);
 		if(strcmp(dest,".")!=0){
 
-			strcpy(CUR_DIR, NEW_DIR);
+			strcpy(session[fd].CUR_DIR, NEW_DIR);
 				// sprintf(CUR_DIR, "%s/", CUR_DIR);
-				strcat(CUR_DIR, "/");
+				strcat(session[fd].CUR_DIR, "/");
 			
 		}
 	
@@ -484,9 +433,7 @@ char* handle_pwd(int fd) {
 	// bzero(TEMP, sizeof(TEMP));
 	bzero(TEMP, BUFFER_SIZE);
 	strcpy(TEMP, response);
-	// char* BASE_DIR = "server_dir";
-	// sprintf(TEMP, "%s%s/%s%s", TEMP, BASE_DIR, session[fd].uname, CUR_DIR);
-	strcat(TEMP, CUR_DIR);
+	strcat(TEMP, session[fd].CUR_DIR);
 	return TEMP;	
 }
 

@@ -24,10 +24,7 @@ char CUR_DIR[256];
 int main()
 {
 	bzero(CUR_DIR, sizeof(CUR_DIR));
-	// storing / as the cur directory in CUR_DIR global variable
-	// CUR_DIR[0] = '/';
-	// CUR_DIR[1] = '\0';
-
+	
 	strcpy(CUR_DIR, "server_dir/");
 	printf("%s\n", CUR_DIR);
 
@@ -147,10 +144,10 @@ int main()
 					
 					bzero(buffer,sizeof(buffer));
 					int bytes = recv(fd,buffer,sizeof(buffer),0); 
-					// also potentially reset client session here
+					
 					if(bytes==0) // to handle Ctrl+C from client side
 					{
-						bzero(&session[fd], sizeof(session[fd]));
+						bzero(&session[fd], sizeof(session[fd]));//resetting client session
 						close(fd);
 						printf("connection closed from client\n");
 						FD_CLR(fd,&full_fdset);
@@ -173,7 +170,7 @@ int main()
 							perror("send");
 							exit(-1);
 						}
-						bzero(&session[fd], sizeof(session[fd]));
+						bzero(&session[fd], sizeof(session[fd]));//resetting client session
 						close(fd);
 						printf("connection closed from client\n");
 						FD_CLR(fd,&full_fdset);

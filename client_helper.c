@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 
 void displayIntro() {
 	printf("Welcome to the FTP Client!\
@@ -61,7 +62,7 @@ int handle_commands(int fd, char* command) {
 	} else if (strcmp(token, "!CWD") == 0) {
 		char* dest = strtok(NULL, "\n");		// get rest of the path
 		if (dest == NULL) {
-			printf("202 Command not implemented.\n");
+			printf("501 Syntax error in parameters or arguments.\n");
 			return 1;
 		}
 
@@ -89,7 +90,6 @@ int handle_commands(int fd, char* command) {
 			return 1;
 		}	
 
-		printf("before sprintf\n");
 
 		sprintf(NEW_DIR, "%s%s", CUR_DIR, dest);
 		printf("%s\n", NEW_DIR);
@@ -150,7 +150,7 @@ void handle_retr(int transfer_sd, char* filename) {
 	FILE_DIR[0] = '\0';
 
 	sprintf(FILE_DIR, "%s%s", CUR_DIR, filename);
-	printf("file path: %s\n", FILE_DIR);
+	// printf("file path: %s\n", FILE_DIR);
 	int bytes_read;
 	char buffer[1024];
 	bzero(buffer, sizeof(buffer));
@@ -178,30 +178,33 @@ void handle_stor(int transfer_sd, char* filename) {
 	FILE_DIR[0] = '\0';
 
 	sprintf(FILE_DIR, "%s%s", CUR_DIR, filename);
-	printf("file path: %s\n", FILE_DIR);
+	// printf("file path: %s\n", FILE_DIR);
 	// Open file for reading
-	printf("inside handle_stor\n");
+
 	int bytes_read;
 	char buffer[1024];
 	bzero(buffer, sizeof(buffer));
-	printf("Buffer: %s\n", buffer);
+	
     FILE* file = fopen(FILE_DIR, "rb");
 	// FILE* file = fopen(filename, "rb");
     if (file == NULL) {
-		printf("550 No such file or directory.\n");
+		// perror("fopen");
+		printf("550 No such file or directory, creating one.\n");
 		exit(-1);
+		// return;
     }
+
 
     // Read data from file and send to server
     while ((bytes_read = fread(buffer, sizeof(char), 1024, file)) > 0) {
-		printf("inside bytes read\n");
+		
         if (send(transfer_sd, buffer, bytes_read, 0) == -1) {
             perror("send");
             exit(-1);
         }
     }
 
-	printf("after bytes read\n");
+	
 	return;
 }
 

@@ -3,31 +3,30 @@
 #include<sys/socket.h>
 #include<arpa/inet.h>
 #include <netinet/in.h>
+#include <time.h>
 
 #include<unistd.h>
 #include<stdlib.h>
 
 #include "client_helper.h"
 
-// char* CUR_DIR = "/";
+
 int PORT_OFFSET = 1;
 char CUR_DIR[256];
 
 int main()
 {
-	displayIntro();
-	// potentially change to fixed size
-	// CUR_DIR = "client_dir/";		// using CUR_DIR here because globals need to have a fixed size
-
-	// CUR_DIR[0] = '/';
-	// CUR_DIR[1] = '\0';
+	displayIntro(); 
 
 	strcpy(CUR_DIR, "client_dir/");
-	printf("%s\n", CUR_DIR);
+
+	srand(time(NULL));  // Initialize the random number generator with current time
+
+    PORT_OFFSET = rand() % 100 + 1;  // Generate a random number between 1 and 100
 
 	//socket
 	int server_sd = socket(AF_INET,SOCK_STREAM,0);
-	printf("server sd = %d \n",server_sd);
+	// printf("server sd = %d \n",server_sd);
 	if(server_sd<0)
 	{
 		perror("socket:");
@@ -64,7 +63,7 @@ int main()
 		// if 0 it's server_side, if 1 it's client_side
 	   int client_task = handle_commands(server_sd, buffer);
 
-		// handle this in SERVER
+		//handling quit
        if(strcmp(buffer,"QUIT")==0)
         {
 			if(send(server_sd,buffer,strlen(buffer),0)<0)
@@ -74,7 +73,6 @@ int main()
 			}
 			int bytes = recv(server_sd,buffer,sizeof(buffer),0);
 			printf("%s\n", buffer);
-        	// printf("closing the connection to server \n");
 			if(strcmp(buffer, "221 Service closing control connection.")==0)
 			{
 				close(server_sd);
@@ -90,26 +88,27 @@ int main()
 				exit(-1);
 			}
 			char* token = strtok(buffer, " ");
-			printf("%s\n", token);
+			// printf("%s\n", token);
 			int data = 0;
 			if(strcmp(token, "RETR") == 0 || strcmp(token, "STOR")==0 || strcmp(token, "LIST")==0){
 				data = 1;
 			}
 			
-			printf("%d\n", data);
-			if(data) {
+			
+			if(data) { //if it is a data command
 				int status;
 				int pid = fork(); //fork a child process
 				if(pid == 0)   //if it is the child process
 				{
 					// close(server_sd);
-					printf("inside child\n");
+				
 					char buffer[256];
 					recv(server_sd,buffer,sizeof(buffer),0);
 					printf("%s\n", buffer);
-					// printf("inside child\n");
+				
+					//socket for data exchange
 					int data_sd = socket(AF_INET,SOCK_STREAM,0);
-					printf("Data sd = %d \n",data_sd);
+					// printf("Data sd = %d \n",data_sd);
 					if(data_sd<0)
 					{
 						perror("socket:");
@@ -129,14 +128,15 @@ int main()
 						return 1;
 					}
 
-					printf("after getsockname\n");
+					// printf("after getsockname\n");
+
 					//store client data exchange address
 					struct sockaddr_in cli_data_addr; 
 					bzero(&cli_data_addr, sizeof(cli_data_addr)); 
 					cli_data_addr.sin_family = AF_INET;
 					cli_data_addr.sin_port = htons((int) ntohs(sa.sin_port) + PORT_OFFSET - 1);
 					cli_data_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-					printf("%d\n", (int) ntohs(sa.sin_port) + PORT_OFFSET - 1);
+					// printf("%d\n", (int) ntohs(sa.sin_port) + PORT_OFFSET - 1);
 					
 					//bind
 					if(bind(data_sd, (struct sockaddr*)&cli_data_addr,sizeof(cli_data_addr))<0)
@@ -145,7 +145,7 @@ int main()
 						close(data_sd);
 						exit(-1);
 					}
-					printf("after bind\n");
+					// printf("after bind\n");
 					//listen
 					if(listen(data_sd,5)<0)
 					{
@@ -153,7 +153,7 @@ int main()
 						close(data_sd);
 						exit(-1);
 					}
-					printf("after listen\n");
+					// printf("after listen\n");
 
 					if(send(server_sd,"ok",strlen("ok"),0)<0) //sending the message to server
 					{
@@ -169,38 +169,28 @@ int main()
 					serv_data_addr.sin_port = htons(9000);
 					serv_data_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY, INADDR_LOOP
 					socklen_t len = sizeof(serv_data_addr); 
-
-
-					// connect data exchange socket to server address for data exchange
-					// if (connect(data_sd, (struct sockaddr *)&serv_data_addr, sizeof(serv_data_addr)) < 0)
-					// {
-					// 	perror("connect");
-					// 	return -1;
-					// }
 					
-					printf("before accept\n");
+					// printf("before accept\n");
 					int transfer_sd = accept(data_sd,(struct sockaddr *)&serv_data_addr,&len);
-					printf("after accept\n");
+					// printf("after accept\n");
 					bzero(buffer,sizeof(buffer));
 					recv(transfer_sd,buffer,sizeof(buffer),0);
-					printf("%s\n", buffer);
+					// printf("%s\n", buffer);
 			
-					// remove these
+					
 					if(send(transfer_sd,"hi from client data",strlen("hi from client data"),0)<0) //sending the message to server
 					{
 						perror("send");
 						exit(-1);
 					}
 
-					printf("%s\n", token);
+
 
 					bzero(buffer,sizeof(buffer));
 					
 
 					if(strcmp(token, "RETR") == 0){
-						printf("inside retr\n");
 						char* filename = strtok(NULL, "\n");
-						printf("%s\n", filename);
 						handle_retr(transfer_sd, filename);
 						
 						close(transfer_sd);
@@ -209,21 +199,17 @@ int main()
 						exit(0);
 					}
 					else if(strcmp(token, "STOR") == 0){
-						printf("inside stor\n");
 						char* filename = strtok(NULL, "\n");
-						printf("%s\n", filename);
 						handle_stor(transfer_sd, filename);
-						// recv(transfer_sd,buffer,sizeof(buffer),0);
-						// printf("%s\n", buffer);
+				
 						close(transfer_sd);
 						close(data_sd);
 
 						exit(0);
 
 					}else if(strcmp(token, "LIST") == 0){
-						printf("inside list\n");
 						handle_list(transfer_sd);
-						close(transfer_sd); //potentially not needed in list and retr
+						close(transfer_sd); 
 						close(data_sd);
 
 						exit(0);
@@ -235,12 +221,14 @@ int main()
 					exit(0);
 				}
 				else{
-					// close(transfer_sd);
-					// close(data_sd);
+					//waiting till child process finishes executing
 					wait(&status);
-					bzero(buffer,sizeof(buffer));	
-					int bytes = recv(server_sd,buffer,sizeof(buffer),0);
-					printf("%s\n", buffer);
+					if(status!=-1){
+						bzero(buffer,sizeof(buffer));	
+						int bytes = recv(server_sd,buffer,sizeof(buffer),0);
+						printf("%s\n", buffer);
+					}
+					
 
 				}
 			}
