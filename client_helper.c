@@ -162,7 +162,7 @@ int handle_commands(int fd, char* command) {
 			// 	}
 			// }
 
-			printf("200 directory changed to %s.\n", CUR_DIR);
+			printf("200 directory changed to %s\n", NEW_DIR);
 
 		} else {
 			printf("550 No such file or directory.\n");

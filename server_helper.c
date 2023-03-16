@@ -89,6 +89,7 @@ char* handle_pass(int fd) {
 		response = handle_messages(230);
 		session[fd].state = 2;			// state == 2 means user is now authenticated
 		// potentially make directory for the client here
+		sprintf(CUR_DIR, "%s%s/", CUR_DIR, session[fd].uname);
 	}
 
 	return response;
@@ -140,31 +141,11 @@ char* handle_stor(int fd, int data_sd) {
 	printf("%s\n", response);
 	char* filename = strtok(NULL, "\n");
 	printf("%s\n", filename);
-	// char* BASE_DIR = "server_dir";
-	// sprintf(BASE_DIR, "%s/%s", BASE_DIR, session[fd].uname);
-	char BASE_DIR[BUFFER_SIZE];
-	BASE_DIR[0] = '\0';
-	char* base = "server_dir";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
-	printf("uname:%s\n", session[fd].uname);
-	sprintf(BASE_DIR, "%s/%s", base, session[fd].uname);
-
-
-	// char FULL_DIR[101];
-	// FULL_DIR[0] = '\0';			// to signify char array as empty string, I can put in null character in the beginning
-
-	// sprintf helps concatenate like printf
-	
 
 	char FILE_DIR[BUFFER_SIZE];
 	FILE_DIR[0] = '\0';
-
-	if(strcmp(CUR_DIR, "/")==0){
-		sprintf(FILE_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
-	}
-	else{
-		sprintf(FILE_DIR, "%s%s/%s", BASE_DIR, CUR_DIR, filename);
-	}
 	
+	sprintf(FILE_DIR, "%s%s", CUR_DIR, filename);
 	printf("file path: %s\n", FILE_DIR);
     // Open file for writing
 	//potentially have temp file name
@@ -231,28 +212,11 @@ char* handle_retr(int fd, int data_sd) {
 	char* filename = strtok(NULL, "\n");
 	printf("%s\n", filename);
 	
-	char BASE_DIR[BUFFER_SIZE];
-	BASE_DIR[0] = '\0';
-	char* base = "server_dir";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
-	printf("uname:%s\n", session[fd].uname);
-	sprintf(BASE_DIR, "%s/%s", base, session[fd].uname);
-
 	char FILE_DIR[BUFFER_SIZE];
 	FILE_DIR[0] = '\0';
 
-	if(strcmp(CUR_DIR, "/")==0){
-		sprintf(FILE_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
-	}
-	else{
-		sprintf(FILE_DIR, "%s%s/%s", BASE_DIR, CUR_DIR, filename);
-	}
-
-	// sprintf(FILE_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
+	sprintf(FILE_DIR, "%s%s", CUR_DIR, filename);
 	printf("file path: %s\n", FILE_DIR);
-
-	// sprintf(FILE_DIR, "%s/%s", CUR_DIR, filename);
-	
-	// sprintf(FILE_DIR, "./%s", filename);
 
     // Open file for reading
     file = fopen(FILE_DIR, "rb");
@@ -282,21 +246,8 @@ char* handle_list(int fd, int data_sd) {
     DIR* dir;
     struct dirent* entry;
 
-	// char* BASE_DIR = "server_dir";
-
-	char BASE_DIR[BUFFER_SIZE];
-	BASE_DIR[0] = '\0';
-	char* base = "server_dir";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
-	printf("uname:%s\n", session[fd].uname);
-	sprintf(BASE_DIR, "%s/%s", base, session[fd].uname);
-	// sprintf(BASE_DIR, "%s/%s", BASE_DIR, session[fd].uname);
-	char FULL_DIR[BUFFER_SIZE];
-	FULL_DIR[0] = '\0';
-
-	sprintf(FULL_DIR, "%s%s", BASE_DIR, CUR_DIR);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
-	printf("%s\n", FULL_DIR);
     // Open directory
-    dir = opendir(FULL_DIR);
+    dir = opendir(CUR_DIR);
 	char* response = handle_messages(550);
     if (dir == NULL) {
         return response;
@@ -457,11 +408,12 @@ char* handle_data(int fd, int token) {
 
 char* handle_cwd(int fd) {
 	printf("inside handle cwd\n");
-	char BASE_DIR[BUFFER_SIZE];
-	BASE_DIR[0] = '\0';
-	char* base = "server_dir";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
-	printf("uname:%s\n", session[fd].uname);
-	sprintf(BASE_DIR, "%s/%s", base, session[fd].uname);
+	// char BASE_DIR[BUFFER_SIZE];
+	// BASE_DIR[0] = '\0';
+	// char* base = "server_dir";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
+	// printf("uname:%s\n", session[fd].uname);
+	// sprintf(BASE_DIR, "%s/%s", base, session[fd].uname);
+
 	char* dest = strtok(NULL, "\n");
 	printf("dest: %s\n", dest);
 	if (dest == NULL) {
@@ -492,23 +444,25 @@ char* handle_cwd(int fd) {
 	}
 
 
-	if(CUR_DIR[0]=='/'){
-		while(CUR_DIR[0]=='/'){
-			int i;
-			for (i = 0; CUR_DIR[i] != '\0'; i++) {
-				CUR_DIR[i] = CUR_DIR[i+1];
-			}
+	// if(CUR_DIR[0]=='/'){
+	// 	while(CUR_DIR[0]=='/'){
+	// 		int i;
+	// 		for (i = 0; CUR_DIR[i] != '\0'; i++) {
+	// 			CUR_DIR[i] = CUR_DIR[i+1];
+	// 		}
 		
-    	}
-	}
+    // 	}
+	// }
 	// dest = strtok(dest, "/");
 	printf("before sprintf\n");
-	if(strcmp(CUR_DIR, "")==0){
-		sprintf(NEW_DIR, "%s/%s", BASE_DIR, dest);
-	}
-	else{
-		sprintf(NEW_DIR, "%s/%s/%s", BASE_DIR, CUR_DIR, dest);
-	}
+	// if(strcmp(CUR_DIR, "")==0){
+	// 	sprintf(NEW_DIR, "%s/%s", BASE_DIR, dest);
+	// }
+	// else{
+	// 	sprintf(NEW_DIR, "%s/%s/%s", BASE_DIR, CUR_DIR, dest);
+	// }
+
+	sprintf(NEW_DIR, "%s%s", CUR_DIR, dest);
 	printf("%s\n", NEW_DIR);
 
 	char exec[strlen(NEW_DIR) + 4];
@@ -525,20 +479,24 @@ char* handle_cwd(int fd) {
 		strcat(TEMP, dest);
 		// strcpy(CUR_DIR, TEMP);
 		if(strcmp(dest,".")!=0){
-			if(strcmp(CUR_DIR, "")!=0){
-				sprintf(CUR_DIR, "/%s/%s", CUR_DIR, dest);
-			}
-			else{
-				sprintf(CUR_DIR, "/%s", dest);
-			}
+			// if(strcmp(CUR_DIR, "")!=0){
+			// 	sprintf(CUR_DIR, "/%s/%s", CUR_DIR, dest);
+			// }
+			// else{
+			// 	sprintf(CUR_DIR, "/%s", dest);
+			// }
+
+			strcpy(CUR_DIR, NEW_DIR);
+				// sprintf(CUR_DIR, "%s/", CUR_DIR);
+				strcat(CUR_DIR, "/");
 			
 		}
-		else{
-			if(strcmp(CUR_DIR, "")==0){
-				// CUR_DIR = "/";
-				strcat(CUR_DIR, "/");
-			}
-		}
+		// else{
+		// 	if(strcmp(CUR_DIR, "")==0){
+		// 		// CUR_DIR = "/";
+		// 		strcat(CUR_DIR, "/");
+		// 	}
+		// }
 		
 
 		char* response =  handle_messages(200);
@@ -562,9 +520,9 @@ char* handle_pwd(int fd) {
 	// bzero(TEMP, sizeof(TEMP));
 	bzero(TEMP, BUFFER_SIZE);
 	strcpy(TEMP, response);
-	char* BASE_DIR = "server_dir";
-	sprintf(TEMP, "%s%s/%s%s", TEMP, BASE_DIR, session[fd].uname, CUR_DIR);
-	// strcat(TEMP, CUR_DIR);
+	// char* BASE_DIR = "server_dir";
+	// sprintf(TEMP, "%s%s/%s%s", TEMP, BASE_DIR, session[fd].uname, CUR_DIR);
+	strcat(TEMP, CUR_DIR);
 	return TEMP;	
 }
 

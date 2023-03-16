@@ -25,9 +25,12 @@ int main()
 {
 	bzero(CUR_DIR, sizeof(CUR_DIR));
 	// storing / as the cur directory in CUR_DIR global variable
-	CUR_DIR[0] = '/';
-	CUR_DIR[1] = '\0';
-	//socket
+	// CUR_DIR[0] = '/';
+	// CUR_DIR[1] = '\0';
+
+	strcpy(CUR_DIR, "server_dir/");
+	printf("%s\n", CUR_DIR);
+
 	bzero(session, sizeof(session));
 
 	FILE *fp;
@@ -66,6 +69,7 @@ int main()
     // Close the file
     fclose(fp);
 
+	//socket
 	int server_sd = socket(AF_INET,SOCK_STREAM,0);
 	printf("Server fd = %d \n",server_sd);
 	if(server_sd<0)
