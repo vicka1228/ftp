@@ -408,12 +408,7 @@ char* handle_data(int fd, int token) {
 
 char* handle_cwd(int fd) {
 	printf("inside handle cwd\n");
-	// char BASE_DIR[BUFFER_SIZE];
-	// BASE_DIR[0] = '\0';
-	// char* base = "server_dir";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
-	// printf("uname:%s\n", session[fd].uname);
-	// sprintf(BASE_DIR, "%s/%s", base, session[fd].uname);
-
+	
 	char* dest = strtok(NULL, "\n");
 	printf("dest: %s\n", dest);
 	if (dest == NULL) {
@@ -443,24 +438,7 @@ char* handle_cwd(int fd) {
 		return handle_messages(504);
 	}
 
-
-	// if(CUR_DIR[0]=='/'){
-	// 	while(CUR_DIR[0]=='/'){
-	// 		int i;
-	// 		for (i = 0; CUR_DIR[i] != '\0'; i++) {
-	// 			CUR_DIR[i] = CUR_DIR[i+1];
-	// 		}
-		
-    // 	}
-	// }
-	// dest = strtok(dest, "/");
 	printf("before sprintf\n");
-	// if(strcmp(CUR_DIR, "")==0){
-	// 	sprintf(NEW_DIR, "%s/%s", BASE_DIR, dest);
-	// }
-	// else{
-	// 	sprintf(NEW_DIR, "%s/%s/%s", BASE_DIR, CUR_DIR, dest);
-	// }
 
 	sprintf(NEW_DIR, "%s%s", CUR_DIR, dest);
 	printf("%s\n", NEW_DIR);
@@ -474,31 +452,17 @@ char* handle_cwd(int fd) {
 
 	if (return_val == 0) {
 		char TEMP[101];
-		// TEMP[0] = '/';
 		TEMP[0] = '\0';
 		strcat(TEMP, dest);
 		// strcpy(CUR_DIR, TEMP);
 		if(strcmp(dest,".")!=0){
-			// if(strcmp(CUR_DIR, "")!=0){
-			// 	sprintf(CUR_DIR, "/%s/%s", CUR_DIR, dest);
-			// }
-			// else{
-			// 	sprintf(CUR_DIR, "/%s", dest);
-			// }
 
 			strcpy(CUR_DIR, NEW_DIR);
 				// sprintf(CUR_DIR, "%s/", CUR_DIR);
 				strcat(CUR_DIR, "/");
 			
 		}
-		// else{
-		// 	if(strcmp(CUR_DIR, "")==0){
-		// 		// CUR_DIR = "/";
-		// 		strcat(CUR_DIR, "/");
-		// 	}
-		// }
-		
-
+	
 		char* response =  handle_messages(200);
 		char* TEMP_RES = malloc(BUFFER_SIZE);
 		// bzero(TEMP_RES, sizeof(TEMP_RES));

@@ -39,20 +39,10 @@ void handle_port(int cfd, char* PORT_VAL) {
 }
 
 int handle_commands(int fd, char* command) {
-	// char* CUR_DIR = *CDIR;
 
 	// copying command into a modifiable variable for convenience
 	char client_command[strlen(command) + 1];
 	strcpy(client_command, command);
-
-	// this is the base directory starts from on client side
-	// char* BASE_DIR = "client_dir";
-	
-	// char FULL_DIR[101];
-	// FULL_DIR[0] = '\0';			// to signify char array as empty string, I can put in null character in the beginning
-
-	// sprintf helps concatenate like printf
-	// sprintf(FULL_DIR, "%s%s", BASE_DIR, CUR_DIR);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
 
 	// strtok command gets the value up until the delimiter: the main command
 	char* token = strtok(client_command, " ");
@@ -97,35 +87,12 @@ int handle_commands(int fd, char* command) {
 		if(strcmp(dest, "..")==0){
 			printf("504 Command not implemented for that parameter.\n");
 			return 1;
-		}
-
-
-		// if(CUR_DIR[0]=='/'){
-		// while(CUR_DIR[0]=='/'){
-		// 	int i;
-		// 	for (i = 0; CUR_DIR[i] != '\0'; i++) {
-		// 		CUR_DIR[i] = CUR_DIR[i+1];
-		// 	}
-		
-    	// }
-	// }
-
-		
+		}	
 
 		printf("before sprintf\n");
-		// if(strcmp(CUR_DIR, "")==0){
-		// 	sprintf(NEW_DIR, "%s%s", CUR_DIR, dest);
-		// }
-		// else{
-		// 	sprintf(NEW_DIR, "%s/%s/%s", BASE_DIR, CUR_DIR, dest);
-		// }
 
 		sprintf(NEW_DIR, "%s%s", CUR_DIR, dest);
 		printf("%s\n", NEW_DIR);
-
-
-
-		// sprintf(NEW_DIR, "%s%s", FULL_DIR, dest);
 		
 		char exec[strlen(NEW_DIR) + 4];			// the command to be run
 		exec[0] = '\0';
@@ -134,33 +101,17 @@ int handle_commands(int fd, char* command) {
 
 		int return_val = system(exec);			// check if the terminal command was successful
 		if (return_val == 0) {
-			// potential to change to strcpy after CDIR is fixed
+
 			char TEMP[101];
 			TEMP[0] = '\0';
 			strcat(TEMP, dest);
 
-			// potentially change to strcpy
-			// *CDIR = TEMP;
-
 			if(strcmp(dest,".")!=0){
-				// if(strcmp(CUR_DIR, "")!=0){
-				// 	sprintf(CUR_DIR, "/%s/%s", CUR_DIR, dest);
-				// }
-				// else{
-				// 	sprintf(CUR_DIR, "/%s", dest);
-				// }
 
 				strcpy(CUR_DIR, NEW_DIR);
-				// sprintf(CUR_DIR, "%s/", CUR_DIR);
 				strcat(CUR_DIR, "/");
 			
 			}
-			// else{
-			// 	if(strcmp(CUR_DIR, "")==0){
-			// 		// CUR_DIR = "/";
-			// 		strcat(CUR_DIR, "/");
-			// 	}
-			// }
 
 			printf("200 directory changed to %s\n", NEW_DIR);
 
@@ -198,13 +149,6 @@ void handle_retr(int transfer_sd, char* filename) {
 	char FILE_DIR[1024];
 	FILE_DIR[0] = '\0';
 
-	// if(strcmp(CUR_DIR, "/")==0){
-	// 	sprintf(FILE_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
-	// }
-	// else{
-	// 	sprintf(FILE_DIR, "%s%s/%s", BASE_DIR, CUR_DIR, filename);
-	// }
-
 	sprintf(FILE_DIR, "%s%s", CUR_DIR, filename);
 	printf("file path: %s\n", FILE_DIR);
 	int bytes_read;
@@ -225,38 +169,14 @@ void handle_retr(int transfer_sd, char* filename) {
     // Close file
     fclose(file);
 
-    // Receive response from server
-    // if ((bytes_read = recv(transfer_sd, buffer, BUFFER_SIZE, 0)) == -1) {
-    //     perror("recv");
-    //     exit(EXIT_FAILURE);
-    // }
-    // buffer[bytes_read] = '\0';
-    // printf("%s\n", buffer);
-
-    // Close socket
-    // close(sockfd);
-
     return;
 }
 
 void handle_stor(int transfer_sd, char* filename) {
-	// char* CUR_DIR = *CDIR;
-	// printf("%s\n", CUR_DIR);
-	// this is the base directory starts from on client side
-	// char* BASE_DIR = "client_dir";
 	
 	char FILE_DIR[1024];
 	FILE_DIR[0] = '\0';
 
-	// if(strcmp(CUR_DIR, "/")==0){
-	// 	sprintf(FILE_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
-	// }
-	// else{
-	// 	sprintf(FILE_DIR, "%s%s/%s", BASE_DIR, CUR_DIR, filename);
-	// }
-	// // sprintf helps concatenate like printf
-	// sprintf(FULL_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
-	
 	sprintf(FILE_DIR, "%s%s", CUR_DIR, filename);
 	printf("file path: %s\n", FILE_DIR);
 	// Open file for reading
@@ -268,9 +188,6 @@ void handle_stor(int transfer_sd, char* filename) {
     FILE* file = fopen(FILE_DIR, "rb");
 	// FILE* file = fopen(filename, "rb");
     if (file == NULL) {
-		printf("inside file null\n");
-        // perror("fopen");
-        // exit(-1);
 		printf("550 No such file or directory.\n");
 		exit(-1);
     }
@@ -284,20 +201,7 @@ void handle_stor(int transfer_sd, char* filename) {
         }
     }
 
-	// if (send(transfer_sd, "end", strlen("end"), 0) == -1) {
-    //         perror("send");
-    //         exit(-1);
-    // }
 	printf("after bytes read\n");
-	// char msg[256];
-	// char* msg = malloc(256);
-	// bzero(msg, 256);
-	// recv(transfer_sd,msg,256,0);
-	// printf("msg: %s\n", msg);
-	// free(msg);
-	// bzero(buffer,sizeof(buffer));
-	// recv(transfer_sd,buffer,sizeof(buffer),0);
-	// printf("%s\n", buffer);
 	return;
 }
 
