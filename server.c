@@ -9,6 +9,7 @@
 #include<arpa/inet.h>
 #include<netinet/in.h>
 #include<sys/select.h>
+#include<sys/stat.h>
 #include<unistd.h>
 #include<stdlib.h>
 
@@ -18,7 +19,7 @@
 
 // defining the global extern variables
 struct User session[MAX_USERS];
-char CUR_DIR[100];
+char CUR_DIR[256];
 
 int main()
 {
@@ -28,6 +29,42 @@ int main()
 	CUR_DIR[1] = '\0';
 	//socket
 	bzero(session, sizeof(session));
+
+	FILE *fp;
+    char line[1024];
+    char *username;
+    char dir_path[1024];
+
+    // Open the users.txt file for reading
+    fp = fopen("users.txt", "r");
+    if (fp == NULL) {
+        perror("Failed to open users.txt");
+        exit(EXIT_FAILURE);
+    }
+
+    // Parse each line of the file
+    while (fgets(line, 1024, fp) != NULL) {
+        // Get the username (the first token)
+        username = strtok(line, ",");
+        if (username == NULL) {
+            fprintf(stderr, "Invalid line in users.txt\n");
+            continue;
+        }
+
+        // Create a directory with the username under /server_dir if it doesn't already exist
+        snprintf(dir_path, 1024, "server_dir/%s", username);
+        if (access(dir_path, F_OK) != 0) {
+            if (mkdir(dir_path, 0755) != 0) {
+                perror("Failed to create directory");
+                exit(EXIT_FAILURE);
+            }
+            printf("Created directory: %s\n", dir_path);
+        }
+
+		}
+
+    // Close the file
+    fclose(fp);
 
 	int server_sd = socket(AF_INET,SOCK_STREAM,0);
 	printf("Server fd = %d \n",server_sd);
