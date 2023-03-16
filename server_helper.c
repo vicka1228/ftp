@@ -51,6 +51,9 @@ char* handle_messages(int code) {
 	case 551:
 		strcpy(code_message,"551 Could not create file or directory.");
 		break;
+	case 552:
+		strcpy(code_message,"552 Error during data transfer.");
+		break;
 	default:
 		strcpy(code_message,"Unexpected Error");
 		break;
@@ -133,13 +136,14 @@ char* handle_stor(int fd) {
 	char* filename = strtok(NULL, "\n");
 	printf("%s\n", filename);
     // Open file for writing
-    file = fopen(filename, "w");
+	//potentially have temp file name
+    file = fopen(filename, "w"); //potentially check wb
     if (file == NULL) {
 		printf("file null\n");
         return response;
 		// return;
     }
-
+	
     // Read data from client and write to file
     // while ((bytes_read = recv(fd, buffer, BUFFER_SIZE, 0)) > 0) {
 	// 	printf("write\n");
@@ -213,9 +217,57 @@ char* handle_stor(int fd) {
 	// return;
 }
 
-char* handle_retr(int fd, int data_sd) {
+char* handle_retr(int fd) {
 	printf("Inside handle_retr\n");
-	return "NA";
+	char buffer[BUFFER_SIZE];
+	bzero(buffer, sizeof(buffer));
+    int bytes_read;
+    FILE* file;
+
+	char* response = handle_messages(550);
+	printf("%s\n", response);
+	char* filename = strtok(NULL, "\n");
+	printf("%s\n", filename);
+
+
+	// this is the base directory starts from on server side
+	char* BASE_DIR = "server_dir";
+	
+	// char FULL_DIR[101];
+	// FULL_DIR[0] = '\0';			// to signify char array as empty string, I can put in null character in the beginning
+
+	// sprintf helps concatenate like printf
+	
+
+	char FILE_DIR[BUFFER_SIZE];
+	FILE_DIR[0] = '\0';
+
+	sprintf(FILE_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
+	printf("file path: %s\n", FILE_DIR);
+
+	// sprintf(FILE_DIR, "%s/%s", CUR_DIR, filename);
+	
+	// sprintf(FILE_DIR, "./%s", filename);
+
+    // Open file for reading
+    file = fopen(FILE_DIR, "rb");
+    if (file == NULL) {
+        return response;
+    }
+
+    // Read data from file and send to client
+    while ((bytes_read = fread(buffer, sizeof(char), BUFFER_SIZE, file)) > 0) {
+        if (send(fd, buffer, bytes_read, 0) == -1) {
+            fclose(file);
+			response = handle_messages(552);
+            return response;
+        }
+    }
+
+    // Close file
+    fclose(file);
+	response = handle_messages(226);
+    return response;
 }
 
 char* handle_list(int fd, int data_sd) {
@@ -252,6 +304,7 @@ char* handle_data(int fd, int token) {
 	if(pid == 0)   //if it is the child process
 	{
 		// close(session[fd].server_sd);
+		//potentially check file status here?
 		if(send(fd,"150 File status okay; about to open data connection.",strlen("150 File status okay; about to open data connection."),0)<0) //sending the message to client
         {
             perror("send");
@@ -337,7 +390,14 @@ char* handle_data(int fd, int token) {
 			
 		}
 		else if (token == 1) {
-			strcpy(response, handle_retr(fd, data_sd));
+			response = handle_retr(data_sd);
+			printf("response in token 1: %s\n", response);
+			close(data_sd);
+			if(send(fd,response,strlen(response),0)<0) //sending the message to client
+			{
+				perror("send");
+				exit(-1);
+			}
 		}
 		else if (token == 2) {
 			strcpy(response, handle_list(fd, data_sd));

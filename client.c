@@ -191,8 +191,15 @@ int main()
 					
 
 					if(strcmp(token, "RETR") == 0){
+						printf("inside retr\n");
 						char* filename = strtok(NULL, "\n");
+						printf("%s\n", filename);
 						handle_retr(transfer_sd, filename);
+						
+						close(transfer_sd);
+						close(data_sd);
+
+						exit(0);
 					}
 					else if(strcmp(token, "STOR") == 0){
 						printf("inside stor\n");

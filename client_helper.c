@@ -127,7 +127,36 @@ int handle_commands(int fd, char* command, char** CDIR) {
 }
 
 void handle_retr(int transfer_sd, char* filename) {
+	int bytes_read;
+	char buffer[1024];
+	bzero(buffer, sizeof(buffer));
+	// Open file for writing
+    FILE* file = fopen(filename, "wb");
+    if (file == NULL) {
+        perror("fopen");
+        exit(-1);
+    }
 
+    // Receive data from server and write to file
+    while ((bytes_read = recv(transfer_sd, buffer, 1024, 0)) > 0) {
+        fwrite(buffer, sizeof(char), bytes_read, file);
+    }
+
+    // Close file
+    fclose(file);
+
+    // Receive response from server
+    // if ((bytes_read = recv(transfer_sd, buffer, BUFFER_SIZE, 0)) == -1) {
+    //     perror("recv");
+    //     exit(EXIT_FAILURE);
+    // }
+    // buffer[bytes_read] = '\0';
+    // printf("%s\n", buffer);
+
+    // Close socket
+    // close(sockfd);
+
+    return;
 }
 
 void handle_stor(int transfer_sd, char* filename, char** CDIR) {
