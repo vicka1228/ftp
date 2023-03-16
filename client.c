@@ -214,7 +214,12 @@ int main()
 						exit(0);
 
 					}else if(strcmp(token, "LIST") == 0){
+						printf("inside list\n");
 						handle_list(transfer_sd);
+						close(transfer_sd); //potentially not needed in list and retr
+						close(data_sd);
+
+						exit(0);
 					}
 					
 					close(transfer_sd);

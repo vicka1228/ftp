@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include "server_helper.h"
 #include<string.h>
+#include <dirent.h>
 
 #include<sys/socket.h>
 #include<arpa/inet.h>
@@ -270,7 +271,7 @@ char* handle_retr(int fd) {
     return response;
 }
 
-char* handle_list(int fd, int data_sd) {
+char* handle_list(int fd) {
 	// char command[100];
 	// command[0] = '\0';
 	// char buffer[BUFFER_SIZE];
@@ -292,7 +293,44 @@ char* handle_list(int fd, int data_sd) {
     // pclose(fp);
 
 	// printf("Output:\n%s\n", output);
-	return "NA";
+
+
+	char buffer[BUFFER_SIZE];
+    int bytes_written;
+    DIR* dir;
+    struct dirent* entry;
+
+	char* BASE_DIR = "server_dir";
+	char FULL_DIR[BUFFER_SIZE];
+	FULL_DIR[0] = '\0';
+
+	sprintf(FULL_DIR, "%s%s", BASE_DIR, CUR_DIR);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
+	printf("%s\n", FULL_DIR);
+    // Open directory
+    dir = opendir(FULL_DIR);
+	char* response = handle_messages(550);
+    if (dir == NULL) {
+        return response;
+    }
+
+    // Read directory entries and send to client
+    while ((entry = readdir(dir)) != NULL) {
+		if (entry->d_name[0] != '.') { // exclude hidden files
+			snprintf(buffer, BUFFER_SIZE, "%s\n", entry->d_name);
+			bytes_written = send(fd, buffer, strlen(buffer), 0);
+			if (bytes_written == -1) {
+				closedir(dir);
+				response = handle_messages(552);
+				return response;
+			}
+		}
+    }
+
+    // Close directory
+    closedir(dir);
+
+    response = handle_messages(226);
+    return response;
 }
 
 char* handle_data(int fd, int token) {
@@ -400,7 +438,14 @@ char* handle_data(int fd, int token) {
 			}
 		}
 		else if (token == 2) {
-			strcpy(response, handle_list(fd, data_sd));
+			response = handle_list(data_sd);
+			printf("response in token 2: %s\n", response);
+			close(data_sd);
+			if(send(fd,response,strlen(response),0)<0) //sending the message to client
+			{
+				perror("send");
+				exit(-1);
+			}
 		}
 
 		printf("%s\n", response);

@@ -214,5 +214,11 @@ void handle_stor(int transfer_sd, char* filename, char** CDIR) {
 }
 
 void handle_list(int transfer_sd) {
-	
+	int bytes_read;
+	char buffer[1024];
+	bzero(buffer, sizeof(buffer));
+	// Receive directory listing from server and print to console
+    while ((bytes_read = recv(transfer_sd, buffer, 1024, 0)) > 0) {
+        fwrite(buffer, sizeof(char), bytes_read, stdout);
+    }
 }
