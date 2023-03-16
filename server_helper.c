@@ -215,35 +215,6 @@ char* handle_stor(int fd, int data_sd) {
 	printf("resp: %s\n", resp);
 	printf("response: %s\n", response);
 
-	// char* test = malloc(256);
-	// bzero(test,256);
-	// strcpy(test, "226 Transfer completed.");
-
-	// if(send(fd,test,strlen(test),0)<0) //sending the message to client
-	// {
-	// 	perror("send");
-	// 	exit(-1);
-	// }
-
-	// free(test);
-	
-	// if(send(fd,response,strlen(response),0)<0) //sending the message to client
-	// {
-	// 	perror("send");
-	// 	exit(-1);
-	// }
-
-	// if(send(fd,resp,sizeof(response),0)<0) //sending the message to client
-	// {
-	// 	perror("send");
-	// 	exit(-1);
-	// }
-
-	// if(send(fd,"226 Transfer completed.",strlen("226 Transfer completed."),0)<0) //sending the message to client
-	// {
-	// 	perror("send");
-	// 	exit(-1);
-	// }
 	return response;
 	// return;
 }
@@ -259,24 +230,12 @@ char* handle_retr(int fd, int data_sd) {
 	printf("%s\n", response);
 	char* filename = strtok(NULL, "\n");
 	printf("%s\n", filename);
-
-
-	// this is the base directory starts from on server side
-	// char* BASE_DIR = "server_dir";
-	// sprintf(BASE_DIR, "%s/%s", BASE_DIR, session[fd].uname);
 	
 	char BASE_DIR[BUFFER_SIZE];
 	BASE_DIR[0] = '\0';
 	char* base = "server_dir";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
 	printf("uname:%s\n", session[fd].uname);
 	sprintf(BASE_DIR, "%s/%s", base, session[fd].uname);
-
-
-	// char FULL_DIR[101];
-	// FULL_DIR[0] = '\0';			// to signify char array as empty string, I can put in null character in the beginning
-
-	// sprintf helps concatenate like printf
-	
 
 	char FILE_DIR[BUFFER_SIZE];
 	FILE_DIR[0] = '\0';
@@ -317,28 +276,6 @@ char* handle_retr(int fd, int data_sd) {
 }
 
 char* handle_list(int fd, int data_sd) {
-	// char command[100];
-	// command[0] = '\0';
-	// char buffer[BUFFER_SIZE];
-    // char output[BUFFER_SIZE];
-    // FILE* fp;
-
-	// strcat(command, "ls ");
-
-    // fp = popen(command, "r");
-    // if (fp == NULL) {
-    //     fprintf(stderr, "Error executing command\n");
-    //     exit(1);
-    // }
-
-    // while (fgets(buffer, BUFFER_SIZE, fp) != NULL) {
-    //     strcat(output, buffer);
-    // }
-
-    // pclose(fp);
-
-	// printf("Output:\n%s\n", output);
-
 
 	char buffer[BUFFER_SIZE];
     int bytes_written;
