@@ -95,6 +95,7 @@ char* handle_pass(int fd) {
 }
 
 char* handle_port(int fd) {
+	printf("inside handle port\n");
 	char* host_id = strtok(NULL, " ");
 	
 	printf("%s\n", host_id);
@@ -128,7 +129,7 @@ char* handle_port(int fd) {
 	return response;
 }
 
-char* handle_stor(int fd) {
+char* handle_stor(int fd, int data_sd) {
 	char buffer[BUFFER_SIZE];
 	bzero(buffer, sizeof(buffer));
 	printf("Buffer: %s\n", buffer);
@@ -139,9 +140,15 @@ char* handle_stor(int fd) {
 	printf("%s\n", response);
 	char* filename = strtok(NULL, "\n");
 	printf("%s\n", filename);
-	char* BASE_DIR = "server_dir";
-	sprintf(BASE_DIR, "%s/%s", BASE_DIR, session[fd].uname);
-	
+	// char* BASE_DIR = "server_dir";
+	// sprintf(BASE_DIR, "%s/%s", BASE_DIR, session[fd].uname);
+	char BASE_DIR[BUFFER_SIZE];
+	BASE_DIR[0] = '\0';
+	char* base = "server_dir";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
+	printf("uname:%s\n", session[fd].uname);
+	sprintf(BASE_DIR, "%s/%s", base, session[fd].uname);
+
+
 	// char FULL_DIR[101];
 	// FULL_DIR[0] = '\0';			// to signify char array as empty string, I can put in null character in the beginning
 
@@ -153,6 +160,9 @@ char* handle_stor(int fd) {
 
 	if(strcmp(CUR_DIR, "/")==0){
 		sprintf(FILE_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
+	}
+	else{
+		sprintf(FILE_DIR, "%s%s/%s", BASE_DIR, CUR_DIR, filename);
 	}
 	
 	printf("file path: %s\n", FILE_DIR);
@@ -166,7 +176,7 @@ char* handle_stor(int fd) {
     }
 	
     // Read data from client and write to file
-    // while ((bytes_read = recv(fd, buffer, BUFFER_SIZE, 0)) > 0) {
+    // while ((bytes_read = recv(data_sd, buffer, BUFFER_SIZE, 0)) > 0) {
 	// 	printf("write\n");
     //     fwrite(buffer, sizeof(char), bytes_read, file);
 	// 	printf("after fwrite\n");
@@ -175,7 +185,7 @@ char* handle_stor(int fd) {
 	{
 		bzero(buffer, sizeof(buffer));
 		printf("write\n");
-		bytes_read = recv(fd,buffer,sizeof(buffer),0);
+		bytes_read = recv(data_sd,buffer,sizeof(buffer),0);
 		printf("%s\n", buffer);
 		if(strcmp(buffer, "end")==0){
 			break;
@@ -238,7 +248,7 @@ char* handle_stor(int fd) {
 	// return;
 }
 
-char* handle_retr(int fd) {
+char* handle_retr(int fd, int data_sd) {
 	printf("Inside handle_retr\n");
 	char buffer[BUFFER_SIZE];
 	bzero(buffer, sizeof(buffer));
@@ -252,9 +262,16 @@ char* handle_retr(int fd) {
 
 
 	// this is the base directory starts from on server side
-	char* BASE_DIR = "server_dir";
-	sprintf(BASE_DIR, "%s/%s", BASE_DIR, session[fd].uname);
+	// char* BASE_DIR = "server_dir";
+	// sprintf(BASE_DIR, "%s/%s", BASE_DIR, session[fd].uname);
 	
+	char BASE_DIR[BUFFER_SIZE];
+	BASE_DIR[0] = '\0';
+	char* base = "server_dir";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
+	printf("uname:%s\n", session[fd].uname);
+	sprintf(BASE_DIR, "%s/%s", base, session[fd].uname);
+
+
 	// char FULL_DIR[101];
 	// FULL_DIR[0] = '\0';			// to signify char array as empty string, I can put in null character in the beginning
 
@@ -264,7 +281,14 @@ char* handle_retr(int fd) {
 	char FILE_DIR[BUFFER_SIZE];
 	FILE_DIR[0] = '\0';
 
-	sprintf(FILE_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
+	if(strcmp(CUR_DIR, "/")==0){
+		sprintf(FILE_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
+	}
+	else{
+		sprintf(FILE_DIR, "%s%s/%s", BASE_DIR, CUR_DIR, filename);
+	}
+
+	// sprintf(FILE_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
 	printf("file path: %s\n", FILE_DIR);
 
 	// sprintf(FILE_DIR, "%s/%s", CUR_DIR, filename);
@@ -279,7 +303,7 @@ char* handle_retr(int fd) {
 
     // Read data from file and send to client
     while ((bytes_read = fread(buffer, sizeof(char), BUFFER_SIZE, file)) > 0) {
-        if (send(fd, buffer, bytes_read, 0) == -1) {
+        if (send(data_sd, buffer, bytes_read, 0) == -1) {
             fclose(file);
 			response = handle_messages(552);
             return response;
@@ -292,7 +316,7 @@ char* handle_retr(int fd) {
     return response;
 }
 
-char* handle_list(int fd) {
+char* handle_list(int fd, int data_sd) {
 	// char command[100];
 	// command[0] = '\0';
 	// char buffer[BUFFER_SIZE];
@@ -321,8 +345,14 @@ char* handle_list(int fd) {
     DIR* dir;
     struct dirent* entry;
 
-	char* BASE_DIR = "server_dir";
-	sprintf(BASE_DIR, "%s/%s", BASE_DIR, session[fd].uname);
+	// char* BASE_DIR = "server_dir";
+
+	char BASE_DIR[BUFFER_SIZE];
+	BASE_DIR[0] = '\0';
+	char* base = "server_dir";			// BASE DIR is the server_dir: potentially change to server_dir/safal/
+	printf("uname:%s\n", session[fd].uname);
+	sprintf(BASE_DIR, "%s/%s", base, session[fd].uname);
+	// sprintf(BASE_DIR, "%s/%s", BASE_DIR, session[fd].uname);
 	char FULL_DIR[BUFFER_SIZE];
 	FULL_DIR[0] = '\0';
 
@@ -339,7 +369,7 @@ char* handle_list(int fd) {
     while ((entry = readdir(dir)) != NULL) {
 		if (entry->d_name[0] != '.') { // exclude hidden files
 			snprintf(buffer, BUFFER_SIZE, "%s\n", entry->d_name);
-			bytes_written = send(fd, buffer, strlen(buffer), 0);
+			bytes_written = send(data_sd, buffer, strlen(buffer), 0);
 			if (bytes_written == -1) {
 				closedir(dir);
 				response = handle_messages(552);
@@ -440,7 +470,7 @@ char* handle_data(int fd, int token) {
 			// char* file_name = strtok(NULL, \n);
 			// strcpy(response, handle_stor(data_sd));
 
-			response = handle_stor(data_sd);
+			response = handle_stor(fd, data_sd);
 			printf("response in token 0: %s\n", response);
 			if(send(fd,response,strlen(response),0)<0) //sending the message to client
 			{
@@ -450,7 +480,7 @@ char* handle_data(int fd, int token) {
 			
 		}
 		else if (token == 1) {
-			response = handle_retr(data_sd);
+			response = handle_retr(fd, data_sd);
 			printf("response in token 1: %s\n", response);
 			close(data_sd);
 			if(send(fd,response,strlen(response),0)<0) //sending the message to client
@@ -460,7 +490,7 @@ char* handle_data(int fd, int token) {
 			}
 		}
 		else if (token == 2) {
-			response = handle_list(data_sd);
+			response = handle_list(fd, data_sd);
 			printf("response in token 2: %s\n", response);
 			close(data_sd);
 			if(send(fd,response,strlen(response),0)<0) //sending the message to client
@@ -505,10 +535,13 @@ char* handle_cwd(int fd) {
 	NEW_DIR[0] = '\0';
 
 	if(dest[0]=='/'){
-		int i;
-		for (i = 0; dest[i] != '\0'; i++) {
-			dest[i] = dest[i+1];
-   		}
+		while(dest[0]=='/'){
+			int i;
+			for (i = 0; dest[i] != '\0'; i++) {
+				dest[i] = dest[i+1];
+			}
+		}
+		
 	}
 	int len = strlen(dest);
     if (len > 0) {
@@ -523,10 +556,13 @@ char* handle_cwd(int fd) {
 
 
 	if(CUR_DIR[0]=='/'){
-		int i;
-		for (i = 0; CUR_DIR[i] != '\0'; i++) {
-			CUR_DIR[i] = CUR_DIR[i+1];
-    }
+		while(CUR_DIR[0]=='/'){
+			int i;
+			for (i = 0; CUR_DIR[i] != '\0'; i++) {
+				CUR_DIR[i] = CUR_DIR[i+1];
+			}
+		
+    	}
 	}
 	// dest = strtok(dest, "/");
 	printf("before sprintf\n");
@@ -546,7 +582,7 @@ char* handle_cwd(int fd) {
 	int return_val = system(exec);
 
 	if (return_val == 0) {
-		char TEMP[50];
+		char TEMP[101];
 		// TEMP[0] = '/';
 		TEMP[0] = '\0';
 		strcat(TEMP, dest);
@@ -560,6 +596,12 @@ char* handle_cwd(int fd) {
 			}
 			
 		}
+		else{
+			if(strcmp(CUR_DIR, "")==0){
+				// CUR_DIR = "/";
+				strcat(CUR_DIR, "/");
+			}
+		}
 		
 
 		char* response =  handle_messages(200);
@@ -568,7 +610,7 @@ char* handle_cwd(int fd) {
 		bzero(TEMP_RES, BUFFER_SIZE);
 		strcpy(TEMP_RES, response);
 
-		strcat(TEMP_RES, CUR_DIR);
+		strcat(TEMP_RES, NEW_DIR);
 		return TEMP_RES;	
 		
 	} else {

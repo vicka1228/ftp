@@ -38,21 +38,21 @@ void handle_port(int cfd, char* PORT_VAL) {
 	sprintf(PORT_VAL, "PORT %s,%d,%d", host,p1,p2);
 }
 
-int handle_commands(int fd, char* command, char** CDIR) {
-	char* CUR_DIR = *CDIR;
+int handle_commands(int fd, char* command) {
+	// char* CUR_DIR = *CDIR;
 
 	// copying command into a modifiable variable for convenience
 	char client_command[strlen(command) + 1];
 	strcpy(client_command, command);
 
 	// this is the base directory starts from on client side
-	char* BASE_DIR = "client_dir";
+	// char* BASE_DIR = "client_dir";
 	
-	char FULL_DIR[101];
-	FULL_DIR[0] = '\0';			// to signify char array as empty string, I can put in null character in the beginning
+	// char FULL_DIR[101];
+	// FULL_DIR[0] = '\0';			// to signify char array as empty string, I can put in null character in the beginning
 
 	// sprintf helps concatenate like printf
-	sprintf(FULL_DIR, "%s%s", BASE_DIR, CUR_DIR);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
+	// sprintf(FULL_DIR, "%s%s", BASE_DIR, CUR_DIR);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
 
 	// strtok command gets the value up until the delimiter: the main command
 	char* token = strtok(client_command, " ");
@@ -62,7 +62,7 @@ int handle_commands(int fd, char* command, char** CDIR) {
 		char exec[201];
 		exec[0] = '\0';
 	
-		sprintf(exec, "ls %s", FULL_DIR);
+		sprintf(exec, "ls %s", CUR_DIR);
 		system(exec);		// this runs the actual command like in terminal
 		return 1;			// return 1 to denote that this command is taken care of and no need to send to server
 	} else if (strcmp(token, "!PWD") == 0) {
@@ -75,10 +75,57 @@ int handle_commands(int fd, char* command, char** CDIR) {
 			return 1;
 		}
 
-		char NEW_DIR[201];			// the full_dir path where you need to go
+		char NEW_DIR[401];			// the full_dir path where you need to go
 		NEW_DIR[0] = '\0';
 
-		sprintf(NEW_DIR, "%s%s", BASE_DIR, dest);
+		if(dest[0]=='/'){
+			while(dest[0]=='/'){
+				int i;
+				for (i = 0; dest[i] != '\0'; i++) {
+					dest[i] = dest[i+1];
+				}
+			}
+			
+		}
+		int len = strlen(dest);
+		if (len > 0) {
+			if(dest[len-1]=='/'){
+				dest[len-1] = '\0';
+			}        
+		}
+
+		if(strcmp(dest, "..")==0){
+			printf("504 Command not implemented for that parameter.\n");
+			return 1;
+		}
+
+
+		// if(CUR_DIR[0]=='/'){
+		// while(CUR_DIR[0]=='/'){
+		// 	int i;
+		// 	for (i = 0; CUR_DIR[i] != '\0'; i++) {
+		// 		CUR_DIR[i] = CUR_DIR[i+1];
+		// 	}
+		
+    	// }
+	// }
+
+		
+
+		printf("before sprintf\n");
+		// if(strcmp(CUR_DIR, "")==0){
+		// 	sprintf(NEW_DIR, "%s%s", CUR_DIR, dest);
+		// }
+		// else{
+		// 	sprintf(NEW_DIR, "%s/%s/%s", BASE_DIR, CUR_DIR, dest);
+		// }
+
+		sprintf(NEW_DIR, "%s%s", CUR_DIR, dest);
+		printf("%s\n", NEW_DIR);
+
+
+
+		// sprintf(NEW_DIR, "%s%s", FULL_DIR, dest);
 		
 		char exec[strlen(NEW_DIR) + 4];			// the command to be run
 		exec[0] = '\0';
@@ -93,9 +140,29 @@ int handle_commands(int fd, char* command, char** CDIR) {
 			strcat(TEMP, dest);
 
 			// potentially change to strcpy
-			*CDIR = TEMP;
+			// *CDIR = TEMP;
 
-			printf("200 directory changed to %s.\n", *CDIR);
+			if(strcmp(dest,".")!=0){
+				// if(strcmp(CUR_DIR, "")!=0){
+				// 	sprintf(CUR_DIR, "/%s/%s", CUR_DIR, dest);
+				// }
+				// else{
+				// 	sprintf(CUR_DIR, "/%s", dest);
+				// }
+
+				strcpy(CUR_DIR, NEW_DIR);
+				// sprintf(CUR_DIR, "%s/", CUR_DIR);
+				strcat(CUR_DIR, "/");
+			
+			}
+			// else{
+			// 	if(strcmp(CUR_DIR, "")==0){
+			// 		// CUR_DIR = "/";
+			// 		strcat(CUR_DIR, "/");
+			// 	}
+			// }
+
+			printf("200 directory changed to %s.\n", CUR_DIR);
 
 		} else {
 			printf("550 No such file or directory.\n");
@@ -127,11 +194,24 @@ int handle_commands(int fd, char* command, char** CDIR) {
 }
 
 void handle_retr(int transfer_sd, char* filename) {
+	// char* BASE_DIR = "client_dir";
+	char FILE_DIR[1024];
+	FILE_DIR[0] = '\0';
+
+	// if(strcmp(CUR_DIR, "/")==0){
+	// 	sprintf(FILE_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
+	// }
+	// else{
+	// 	sprintf(FILE_DIR, "%s%s/%s", BASE_DIR, CUR_DIR, filename);
+	// }
+
+	sprintf(FILE_DIR, "%s%s", CUR_DIR, filename);
+	printf("file path: %s\n", FILE_DIR);
 	int bytes_read;
 	char buffer[1024];
 	bzero(buffer, sizeof(buffer));
 	// Open file for writing
-    FILE* file = fopen(filename, "wb");
+    FILE* file = fopen(FILE_DIR, "wb");
     if (file == NULL) {
         perror("fopen");
         exit(-1);
@@ -159,25 +239,33 @@ void handle_retr(int transfer_sd, char* filename) {
     return;
 }
 
-void handle_stor(int transfer_sd, char* filename, char** CDIR) {
-	char* CUR_DIR = *CDIR;
-	printf("%s\n", CUR_DIR);
+void handle_stor(int transfer_sd, char* filename) {
+	// char* CUR_DIR = *CDIR;
+	// printf("%s\n", CUR_DIR);
 	// this is the base directory starts from on client side
-	char* BASE_DIR = "client_dir";
+	// char* BASE_DIR = "client_dir";
 	
-	char FULL_DIR[101];
-	FULL_DIR[0] = '\0';			// to signify char array as empty string, I can put in null character in the beginning
+	char FILE_DIR[1024];
+	FILE_DIR[0] = '\0';
 
-	// sprintf helps concatenate like printf
-	sprintf(FULL_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
-	printf("file path: %s\n", FULL_DIR);
+	// if(strcmp(CUR_DIR, "/")==0){
+	// 	sprintf(FILE_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
+	// }
+	// else{
+	// 	sprintf(FILE_DIR, "%s%s/%s", BASE_DIR, CUR_DIR, filename);
+	// }
+	// // sprintf helps concatenate like printf
+	// sprintf(FULL_DIR, "%s%s%s", BASE_DIR, CUR_DIR, filename);		// full dir built up using the base dir which never changes and CUR_DIR which changes with !CWD
+	
+	sprintf(FILE_DIR, "%s%s", CUR_DIR, filename);
+	printf("file path: %s\n", FILE_DIR);
 	// Open file for reading
 	printf("inside handle_stor\n");
 	int bytes_read;
 	char buffer[1024];
 	bzero(buffer, sizeof(buffer));
 	printf("Buffer: %s\n", buffer);
-    FILE* file = fopen(FULL_DIR, "rb");
+    FILE* file = fopen(FILE_DIR, "rb");
 	// FILE* file = fopen(filename, "rb");
     if (file == NULL) {
 		printf("inside file null\n");

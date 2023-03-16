@@ -11,12 +11,19 @@
 
 // char* CUR_DIR = "/";
 int PORT_OFFSET = 1;
+char CUR_DIR[256];
 
 int main()
 {
 	displayIntro();
 	// potentially change to fixed size
-	char* CUR_DIR = "/";		// using CUR_DIR here because globals need to have a fixed size
+	// CUR_DIR = "client_dir/";		// using CUR_DIR here because globals need to have a fixed size
+
+	// CUR_DIR[0] = '/';
+	// CUR_DIR[1] = '\0';
+
+	strcpy(CUR_DIR, "client_dir/");
+	printf("%s\n", CUR_DIR);
 
 	//socket
 	int server_sd = socket(AF_INET,SOCK_STREAM,0);
@@ -55,7 +62,7 @@ int main()
 
 		// client_task signifier that a command is handled on client_side vs server_side
 		// if 0 it's server_side, if 1 it's client_side
-	   int client_task = handle_commands(server_sd, buffer, &CUR_DIR);
+	   int client_task = handle_commands(server_sd, buffer);
 
 		// handle this in SERVER
        if(strcmp(buffer,"QUIT")==0)
@@ -205,7 +212,7 @@ int main()
 						printf("inside stor\n");
 						char* filename = strtok(NULL, "\n");
 						printf("%s\n", filename);
-						handle_stor(transfer_sd, filename, &CUR_DIR);
+						handle_stor(transfer_sd, filename);
 						// recv(transfer_sd,buffer,sizeof(buffer),0);
 						// printf("%s\n", buffer);
 						close(transfer_sd);
